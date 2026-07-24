@@ -5,7 +5,7 @@ import Sidebar from "./components/Sidebar";
 
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
-import FollowUps from "./pages/FollowUps";
+import FollowUps from "./pages/Followups";
 import Customers from "./pages/Customers";
 import Sales from "./pages/Sales";
 import Quotations from "./pages/Quotations";
