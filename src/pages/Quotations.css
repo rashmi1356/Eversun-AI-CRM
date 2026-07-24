@@ -1,0 +1,66 @@
+.quotation-page {
+  max-width: 850px;
+  margin: 30px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.quotation-page h1,
+.quotation-page h2 {
+  text-align: center;
+  color: #0B5D3B;
+}
+
+.quotation-page input,
+.quotation-page select {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.summary-box {
+  margin-top: 20px;
+  padding: 20px;
+  background: #F4FFF5;
+  border: 2px solid #0B5D3B;
+  border-radius: 10px;
+}
+
+.button-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.save-btn,
+.print-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #0B5D3B;
+}
+
+.print-btn {
+  background: #1565C0;
+}
+
+.saved-card {
+  margin-top: 15px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+}
