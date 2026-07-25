@@ -53,6 +53,22 @@ function Sidebar({ setPage }) {
         <div style={{ padding: "10px" }} onClick={() => menuClick("projects")}>☀️ Projects</div>
         <div style={{ padding: "10px" }} onClick={() => menuClick("reports")}>📈 Reports</div>
         <div style={{ padding: "10px" }} onClick={() => menuClick("users")}>⚙️ Users</div>
+        <div onClick={() => menuClick("performance")}>
+    📊 Employee Performance
+</div>
+
+<div onClick={() => menuClick("customerportal")}>
+    👤 Customer Portal
+</div>
+
+<div
+    onClick={() => {
+        localStorage.clear();
+        window.location.reload();
+    }}
+>
+    🚪 Logout
+</div>
       </div>
     </>
   );
