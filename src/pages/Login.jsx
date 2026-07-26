@@ -15,18 +15,22 @@ function Login({ setIsLoggedIn }) {
       return;
     }
 
-    const savedUsers = JSON.parse(localStorage.getItem("crmUsers")) || [];
+    // Get users from Local Storage
+    const savedUsers = JSON.parse(
+      localStorage.getItem("crmUsers") || "[]"
+    );
+
+    // Combine default users + added users
     const allUsers = [...users, ...savedUsers];
 
-    console.log(allUsers);
-
-const user = allUsers.find((u) => {
-  console.log(u.username, u.password);
-  return (
-    u.username === username &&
-    u.password === password
-  );
-});
+    // Find matching user
+    const user = allUsers.find(
+      (u) =>
+        String(u.username).trim().toLowerCase() ===
+          username.trim().toLowerCase() &&
+        String(u.password).trim() ===
+          password.trim()
+    );
 
     if (user) {
       localStorage.setItem("isLoggedIn", "true");
@@ -66,7 +70,11 @@ const user = allUsers.find((u) => {
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+          style={{
+            width: "100%",
+            padding: "10px",
+            marginBottom: "10px",
+          }}
         />
 
         <input
@@ -74,7 +82,11 @@ const user = allUsers.find((u) => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+          style={{
+            width: "100%",
+            padding: "10px",
+            marginBottom: "10px",
+          }}
         />
 
         <button
@@ -87,7 +99,6 @@ const user = allUsers.find((u) => {
             border: "none",
             cursor: "pointer",
           }}
-          
         >
           Login
         </button>

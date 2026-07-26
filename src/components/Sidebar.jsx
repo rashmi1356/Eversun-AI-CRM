@@ -2,6 +2,7 @@ import { useState } from "react";
 
 function Sidebar({ setPage }) {
   const [open, setOpen] = useState(false);
+  const role = localStorage.getItem("role");
 
   const menuClick = (page) => {
     setPage(page);
@@ -51,23 +52,44 @@ function Sidebar({ setPage }) {
         <div style={{ padding: "10px" }} onClick={() => menuClick("sales")}>💰 Sales</div>
         <div style={{ padding: "10px" }} onClick={() => menuClick("attendance")}>📅 Attendance</div>
         <div style={{ padding: "10px" }} onClick={() => menuClick("projects")}>☀️ Projects</div>
-        <div style={{ padding: "10px" }} onClick={() => menuClick("reports")}>📈 Reports</div>
-        <div style={{ padding: "10px" }} onClick={() => menuClick("users")}>⚙️ Users</div>
-        <div onClick={() => menuClick("performance")}>
-    📊 Employee Performance
-</div>
+       {(role === "Admin" || role === "Head of Sales & Marketing") && (
+  <>
+    <div
+      style={{ padding: "10px" }}
+      onClick={() => menuClick("reports")}
+    >
+      📈 Reports
+    </div>
+
+    <div
+      style={{ padding: "10px" }}
+      onClick={() => menuClick("users")}
+    >
+      ⚙️ Users
+    </div>
+
+    <div
+      style={{ padding: "10px" }}
+      onClick={() => menuClick("performance")}
+    >
+      📊 Employee Performance
+    </div>
+  </>
+)}
 
 <div onClick={() => menuClick("customerportal")}>
     👤 Customer Portal
 </div>
 
 <div
-    onClick={() => {
-        localStorage.clear();
-        window.location.reload();
-    }}
+  onClick={() => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("role");
+    window.location.reload();
+  }}
 >
-    🚪 Logout
+  🚪 Logout
 </div>
       </div>
     </>
