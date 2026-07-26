@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 
 function Leads() {
-  const [leads, setLeads] = useState(() => {
-    const savedLeads = localStorage.getItem("leads");
-    return savedLeads ? JSON.parse(savedLeads) : [];
-  });
+  const [employees, setEmployees] = useState([]);
+
+const [leads, setLeads] = useState(() => {
+  const savedLeads = localStorage.getItem("leads");
+  return savedLeads ? JSON.parse(savedLeads) : [];
+});
 
   const [search, setSearch] = useState("");
 
@@ -15,14 +17,29 @@ function Leads() {
     district: "",
     system: "",
     bill: "",
+    employee: "",
     status: "New",
+    
   });
 
   const [editIndex, setEditIndex] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem("leads", JSON.stringify(leads));
-  }, [leads]);
+  // Save leads
+  localStorage.setItem("leads", JSON.stringify(leads));
+
+  // Load employees
+  const users = JSON.parse(localStorage.getItem("crmUsers")) || [];
+
+  setEmployees(
+    users.filter(
+      (u) =>
+        u.role === "Sales Executive" ||
+        u.role === "Survey Engineer" ||
+        u.role === "Service Engineer"
+    )
+  );
+}, [leads]);
 
   const handleChange = (e) => {
     setForm({
@@ -47,14 +64,15 @@ function Leads() {
     }
 
     setForm({
-      name: "",
-      mobile: "",
-      village: "",
-      district: "",
-      system: "",
-      bill: "",
-      status: "New",
-    });
+  name: "",
+  mobile: "",
+  village: "",
+  district: "",
+  system: "",
+  bill: "",
+  employee: "",
+  status: "New",
+});
   };
 
   const editLead = (index) => {
@@ -127,7 +145,19 @@ function Leads() {
         placeholder="Monthly Electricity Bill"
         value={form.bill}
         onChange={handleChange}
-      />
+      /><select
+  name="employee"
+  value={form.employee}
+  onChange={handleChange}
+>
+  <option value="">Assign Employee</option>
+
+  {employees.map((emp) => (
+    <option key={emp.id} value={emp.name}>
+      {emp.name} ({emp.role})
+    </option>
+  ))}
+</select>
 
       <br /><br />
 
@@ -138,6 +168,7 @@ function Leads() {
       <hr />
 
       <h3>Saved Leads</h3>
+      
 
       <input
         type="text"
@@ -151,13 +182,14 @@ function Leads() {
       <table border="1" cellPadding="8">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Mobile</th>
-            <th>Village</th>
-            <th>District</th>
-            <th>System</th>
-            <th>Bill</th>
-            <th>Action</th>
+           <th>Name</th>
+<th>Mobile</th>
+<th>Village</th>
+<th>District</th>
+<th>System</th>
+<th>Bill</th>
+<th>Assigned To</th>
+<th>Action</th>
           </tr>
         </thead>
 
@@ -173,6 +205,7 @@ function Leads() {
                 <td>{lead.district}</td>
                 <td>{lead.system}</td>
                 <td>{lead.bill}</td>
+                <td>{lead.employee}</td>
 
                 <td>
                   <button

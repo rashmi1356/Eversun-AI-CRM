@@ -1,6 +1,9 @@
+import logo from "../assets/eversun-logo.png";
+
 function Header() {
   const userName = localStorage.getItem("userName") || "Admin";
   const role = localStorage.getItem("role") || "Admin";
+ 
 
   return (
     <div
@@ -25,6 +28,17 @@ function Header() {
         <br />
         <small>{role}</small>
       </div>
+      <div style={{ display: "flex", alignItems: "center" }}>
+  <img
+    src={logo}
+    alt="Logo"
+    style={{
+      width: "60px",
+      marginRight: "10px",
+    }}
+  />
+  <h2>Eversun AI CRM</h2>
+</div>
     </div>
   );
 }

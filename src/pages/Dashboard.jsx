@@ -1,21 +1,88 @@
 import React from "react";
 
 function Dashboard() {
-  const leads = JSON.parse(localStorage.getItem("leadAssignments")) || [];
-  const customers = JSON.parse(localStorage.getItem("customers")) || [];
-  const projects = JSON.parse(localStorage.getItem("projects")) || [];
-  const quotations = JSON.parse(localStorage.getItem("quotations")) || [];
+  const currentUser = localStorage.getItem("userName");
+  const role = localStorage.getItem("role");
+
+  let leads = JSON.parse(localStorage.getItem("leads")) || [];
+  console.log("Leads:", leads);
+console.log("Lead Count:", leads.length);
+  let customers = JSON.parse(localStorage.getItem("customers")) || [];
+  let projects = JSON.parse(localStorage.getItem("projects")) || [];
+  let quotations = JSON.parse(localStorage.getItem("quotations")) || [];
+  let sales = JSON.parse(localStorage.getItem("sales")) || [];
+
+  // Only Admin & Head of Sales can see everything
+  if (
+    role !== "Admin" &&
+    role !== "Head of Sales & Marketing"
+  ) {
+    leads = leads.filter(
+      (item) => item.employee === currentUser
+    );
+
+    customers = customers.filter(
+      (item) => item.employee === currentUser
+    );
+
+    projects = projects.filter(
+      (item) => item.employee === currentUser
+    );
+
+    quotations = quotations.filter(
+      (item) => item.employee === currentUser
+    );
+
+    sales = sales.filter(
+      (item) => item.employee === currentUser
+    );
+  }
 
   const cards = [
-    { title: "👥 Total Leads", value: leads.length },
-    { title: "👤 Customers", value: customers.length },
-    { title: "☀️ Projects", value: projects.length },
-    { title: "📄 Quotations", value: quotations.length },
+    {
+      title:
+        role === "Admin" || role === "Head of Sales & Marketing"
+          ? "👥 Total Leads"
+          : "👥 My Leads",
+      value: leads.length,
+    },
+    {
+      title:
+        role === "Admin" || role === "Head of Sales & Marketing"
+          ? "👤 Total Customers"
+          : "👤 My Customers",
+      value: customers.length,
+    },
+    {
+      title:
+        role === "Admin" || role === "Head of Sales & Marketing"
+          ? "☀️ Total Projects"
+          : "☀️ My Projects",
+      value: projects.length,
+    },
+    {
+      title:
+        role === "Admin" || role === "Head of Sales & Marketing"
+          ? "📄 Total Quotations"
+          : "📄 My Quotations",
+      value: quotations.length,
+    },
+    {
+      title:
+        role === "Admin" || role === "Head of Sales & Marketing"
+          ? "💰 Total Sales"
+          : "💰 My Sales",
+      value: sales.length,
+    },
   ];
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1 style={{ color: "#0B5D3B" }}>📊 Eversun AI CRM Dashboard</h1>
+      <h1 style={{ color: "#0B5D3B" }}>
+        📊 Eversun AI CRM Dashboard
+      </h1>
+
+      <h3>Welcome, {currentUser}</h3>
 
       <div
         style={{
@@ -29,34 +96,19 @@ function Dashboard() {
           <div
             key={index}
             style={{
-              background: "#ffffff",
+              background: "#fff",
               borderRadius: "12px",
               padding: "20px",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
               textAlign: "center",
+              boxShadow: "0 4px 10px rgba(0,0,0,.15)",
             }}
           >
             <h3>{card.title}</h3>
-            <h1 style={{ color: "#0B5D3B" }}>{card.value}</h1>
+            <h1 style={{ color: "#0B5D3B" }}>
+              {card.value}
+            </h1>
           </div>
         ))}
-      </div>
-
-      <div
-        style={{
-          marginTop: "30px",
-          background: "#fff",
-          padding: "20px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-        }}
-      >
-        <h2>🚀 Today's Summary</h2>
-
-        <p>✅ Total Leads : {leads.length}</p>
-        <p>✅ Total Customers : {customers.length}</p>
-        <p>✅ Active Projects : {projects.length}</p>
-        <p>✅ Quotations Generated : {quotations.length}</p>
       </div>
     </div>
   );

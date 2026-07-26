@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logo from "../assets/eversun-logo.png";
 
 function Sidebar({ setPage }) {
   const [open, setOpen] = useState(false);
@@ -42,8 +43,21 @@ function Sidebar({ setPage }) {
           zIndex: 999,
         }}
       >
-        <h2 style={{ padding: "20px" }}>Eversun AI CRM</h2>
-
+        <div style={{ textAlign: "center", padding: "20px 10px" }}>
+  <img
+    src={logo}
+    alt="Eversun Energiaa"
+    style={{
+      width: "170px",
+      borderRadius: "10px",
+      background: "#fff",
+      padding: "8px",
+    }}
+  />
+  <h3 style={{ marginTop: "10px" }}>
+    Eversun AI CRM
+  </h3>
+</div>
         <div style={{ padding: "10px" }} onClick={() => menuClick("dashboard")}>🏠 Dashboard</div>
         <div style={{ padding: "10px" }} onClick={() => menuClick("analytics")}>📊 Analytics</div>
         <div style={{ padding: "10px" }} onClick={() => menuClick("leads")}>👥 Leads</div>

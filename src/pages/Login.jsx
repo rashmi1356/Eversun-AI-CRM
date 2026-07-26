@@ -1,5 +1,6 @@
 import { useState } from "react";
 import users from "../data/users";
+import logo from "../assets/eversun-logo.png";
 
 function Login({ setIsLoggedIn }) {
   const [username, setUsername] = useState("");
@@ -100,6 +101,14 @@ function Login({ setIsLoggedIn }) {
             cursor: "pointer",
           }}
         >
+          <img
+  src={logo}
+  alt="Eversun Energiaa"
+  style={{
+    width: "220px",
+    marginBottom: "20px",
+  }}
+/>
           Login
         </button>
       </div>

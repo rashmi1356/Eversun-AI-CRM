@@ -16,7 +16,6 @@ import Header from "./components/Header";
 import UserManagement from "./pages/UserManagement";
 import EmployeePerformance from "./pages/EmployeePerformance";
 import Attendance from "./pages/Attendance";
-import LeadAssignment from "./pages/LeadAssignment";
 import ProjectTracker from "./pages/ProjectTracker";
 import Analytics from "./pages/Analytics";
 import CustomerPortal from "./pages/CustomerPortal";
@@ -108,9 +107,7 @@ function App() {
 
         {page === "attendance" && <Attendance />}
 
-        {page === "leadassignment" && (
-          <LeadAssignment />
-        )}
+        
 
         {page === "projects" && <ProjectTracker />}
 
