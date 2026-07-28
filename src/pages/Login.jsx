@@ -1,47 +1,40 @@
 import { useState } from "react";
-import users from "../data/users";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 import logo from "../assets/eversun-logo.png";
-
 function Login({ setIsLoggedIn }) {
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    // Admin Login
-    if (username === "admin" && password === "1234") {
+  const handleLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        username,
+        password
+      );
+    const uid = userCredential.user.uid;
+
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+
       localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userName", "Admin");
-      localStorage.setItem("role", "Admin");
-      setIsLoggedIn(true);
-      return;
-    }
+      localStorage.setItem("userName", data.name);
+      localStorage.setItem("role", data.role);
 
-    // Get users from Local Storage
-    const savedUsers = JSON.parse(
-      localStorage.getItem("crmUsers") || "[]"
-    );
-
-    // Combine default users + added users
-    const allUsers = [...users, ...savedUsers];
-
-    // Find matching user
-    const user = allUsers.find(
-      (u) =>
-        String(u.username).trim().toLowerCase() ===
-          username.trim().toLowerCase() &&
-        String(u.password).trim() ===
-          password.trim()
-    );
-
-    if (user) {
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userName", user.name);
-      localStorage.setItem("role", user.role);
       setIsLoggedIn(true);
     } else {
-      alert("Invalid Username or Password");
+      alert("User data not found.");
     }
-  };
+  } catch (error) {
+    alert(error.message);
+  }
+};
 
   return (
     <div
@@ -67,10 +60,11 @@ function Login({ setIsLoggedIn }) {
         </h2>
 
         <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+  type="email"
+  placeholder="Email"
+  value={username}
+  onChange={(e) => setUsername(e.target.value)}
+
           style={{
             width: "100%",
             padding: "10px",
@@ -79,10 +73,11 @@ function Login({ setIsLoggedIn }) {
         />
 
         <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+  type="password"
+  placeholder="Password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+
           style={{
             width: "100%",
             padding: "10px",
