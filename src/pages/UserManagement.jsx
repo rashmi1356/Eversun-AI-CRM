@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { collection, addDoc } from "firebase/firestore";
-
+import { doc, setDoc } from "firebase/firestore";
 function UserManagement() {
   const [users, setUsers] = useState([]);
   const [name, setName] = useState("");
@@ -30,33 +29,19 @@ function UserManagement() {
     );
 
     // Save employee details in Firestore
-    await addDoc(collection(db, "users"), {
+   await setDoc(doc(db, "users", userCredential.user.uid), {
       uid: userCredential.user.uid,
       name,
       username,
       role,
     });
 
-    const newUser = {
-  id: Date.now(),
-  name,
-  username,
-  password,
-  role,
-};
+    alert("User Added Successfully!");
 
-const updatedUsers = [...users, newUser];
-
-setUsers(updatedUsers);
-
-localStorage.setItem("crmUsers", JSON.stringify(updatedUsers));
-
-alert("User Added Successfully!");
-
-setName("");
-setUsername("");
-setPassword("");
-setRole("Sales Executive");
+    setName("");
+    setUsername("");
+    setPassword("");
+    setRole("Sales Executive");
 
   } catch (error) {
     alert(error.message);
