@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { auth, db } from "../firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { collection, addDoc } from "firebase/firestore";
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -12,31 +15,53 @@ function UserManagement() {
     setUsers(savedUsers);
   }, []);
 
-  const addUser = () => {
-    if (!name || !username || !password) {
-      alert("Please fill all fields.");
-      return;
-    }
+  const addUser = async () => {
+  if (!name || !username || !password) {
+    alert("Please fill all fields.");
+    return;
+  }
 
-    const newUser = {
-      id: Date.now(),
+  try {
+    // Create Firebase Authentication user
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      username,
+      password
+    );
+
+    // Save employee details in Firestore
+    await addDoc(collection(db, "users"), {
+      uid: userCredential.user.uid,
       name,
       username,
-      password,
       role,
-    };
+    });
 
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    localStorage.setItem("crmUsers", JSON.stringify(updatedUsers));
+    const newUser = {
+  id: Date.now(),
+  name,
+  username,
+  password,
+  role,
+};
 
-    setName("");
-    setUsername("");
-    setPassword("");
-    setRole("Sales Executive");
+const updatedUsers = [...users, newUser];
 
-    alert("User Added Successfully!");
-  };
+setUsers(updatedUsers);
+
+localStorage.setItem("crmUsers", JSON.stringify(updatedUsers));
+
+alert("User Added Successfully!");
+
+setName("");
+setUsername("");
+setPassword("");
+setRole("Sales Executive");
+
+  } catch (error) {
+    alert(error.message);
+  }
+};
 
   const deleteUser = (id) => {
     const updatedUsers = users.filter((user) => user.id !== id);
@@ -58,7 +83,7 @@ function UserManagement() {
 
       <input
         type="text"
-        placeholder="Username"
+       placeholder="Email"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
       />
