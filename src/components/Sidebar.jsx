@@ -1,5 +1,5 @@
 import { useState } from "react";
-import logo from "../assets/eversun-logo.png";
+
 
 function Sidebar({ setPage }) {
   const [open, setOpen] = useState(false);
@@ -45,15 +45,10 @@ function Sidebar({ setPage }) {
       >
         <div style={{ textAlign: "center", padding: "20px 10px" }}>
   <img
-    src={logo}
-    alt="Eversun Energiaa"
-    style={{
-      width: "170px",
-      borderRadius: "10px",
-      background: "#fff",
-      padding: "8px",
-    }}
-  />
+  src="/eversun-logo.png"
+  alt="Eversun Energiaa"
+  className="company-logo"
+/>
   <h3 style={{ marginTop: "10px" }}>
     Eversun AI CRM
   </h3>

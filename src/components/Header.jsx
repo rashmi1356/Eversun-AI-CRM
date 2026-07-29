@@ -1,44 +1,59 @@
-import logo from "../assets/eversun-logo.png";
+import "./Header.css";
 
 function Header() {
-  const userName = localStorage.getItem("userName") || "Admin";
-  const role = localStorage.getItem("role") || "Admin";
- 
+  const quotationNo =
+    "QTN-" +
+    new Date().getFullYear() +
+    "-" +
+    Date.now().toString().slice(-4);
 
   return (
-    <div
-      style={{
-        background: "#0B5D3B",
-        color: "white",
-        padding: "15px 25px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        borderRadius: "10px",
-        marginBottom: "20px",
-      }}
-    >
-      <div>
-        <h2 style={{ margin: 0 }}>🌞 Eversun AI CRM</h2>
-        <small>PM Surya Ghar Management System</small>
+    <div className="header-container">
+
+      <div className="logo-section">
+        <img
+          src="/eversun-logo.png"
+          alt="Eversun Energiaa"
+          className="company-logo"
+        />
       </div>
 
-      <div style={{ textAlign: "right" }}>
-        <strong>{userName}</strong>
-        <br />
-        <small>{role}</small>
+      <div className="company-section">
+        <h1>EVERSUN ENERGIAA</h1>
+
+        <h3>Solar EPC Company</h3>
+
+        <p>PM Surya Ghar Muft Bijli Yojana Empanelled Vendor</p>
+
+        <p>Bhubaneswar, Odisha</p>
+
+        <p>Mobile : +91 7437965253</p>
+
+        <p>Email : info@eversunenergiaa.com</p>
       </div>
-      <div style={{ display: "flex", alignItems: "center" }}>
-  <img
-    src={logo}
-    alt="Logo"
-    style={{
-      width: "60px",
-      marginRight: "10px",
-    }}
-  />
-  <h2>Eversun AI CRM</h2>
-</div>
+
+      <div className="quotation-section">
+
+        <h2>QUOTATION</h2>
+
+        <table className="quotation-info">
+          <tbody>
+
+            <tr>
+              <td><strong>Quotation No</strong></td>
+              <td>{quotationNo}</td>
+            </tr>
+
+            <tr>
+              <td><strong>Date</strong></td>
+              <td>{new Date().toLocaleDateString()}</td>
+            </tr>
+
+          </tbody>
+        </table>
+
+      </div>
+
     </div>
   );
 }

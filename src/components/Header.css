@@ -1,0 +1,62 @@
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid #0B5D3B;
+  background: #fff;
+}
+
+.logo-section {
+  width: 100px;
+  display: flex;
+  justify-content: center;
+}
+
+.company-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.company-section {
+  flex: 1;
+  text-align: center;
+}
+
+.company-section h1 {
+  margin: 0;
+  color: #0B5D3B;
+  font-size: 30px;
+}
+
+.company-section h3 {
+  margin: 5px 0;
+  color: #444;
+}
+
+.company-section p {
+  margin: 3px 0;
+  font-size: 14px;
+}
+
+.quotation-section {
+  width: 220px;
+}
+
+.quotation-section h2 {
+  text-align: center;
+  color: #0B5D3B;
+  margin-bottom: 10px;
+}
+
+.quotation-info {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.quotation-info td {
+  border: 1px solid #000;
+  padding: 6px;
+  font-size: 14px;
+}

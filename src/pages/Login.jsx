@@ -2,7 +2,6 @@ import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import logo from "../assets/eversun-logo.png";
 function Login({ setIsLoggedIn }) {
 
   const [username, setUsername] = useState("");
@@ -104,13 +103,10 @@ if (username === "admin" && password === "1234") {
             cursor: "pointer",
           }}
         >
-          <img
-  src={logo}
+         <img
+  src="/eversun-logo.png"
   alt="Eversun Energiaa"
-  style={{
-    width: "220px",
-    marginBottom: "20px",
-  }}
+  width="150"
 />
           Login
         </button>

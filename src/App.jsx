@@ -61,7 +61,7 @@ function App() {
       </div>
 
       <div style={{ flex: 1, padding: "20px" }}>
-        <Header />
+       
 
         {page === "dashboard" && (
           <Dashboard
