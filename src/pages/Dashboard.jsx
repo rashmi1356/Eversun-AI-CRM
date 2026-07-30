@@ -27,30 +27,30 @@ useEffect(() => {
   let sales = JSON.parse(localStorage.getItem("sales")) || [];
 
   // Show only employee data
-  if (
-    role !== "Admin" &&
-    role !== "Head of Sales & Marketing"
-  ) {
-    leads = leads.filter(
-      (item) => item.employee === currentUser
-    );
+ const filteredLeads =
+  role === "Admin" || role === "Head of Sales & Marketing"
+    ? leads
+    : leads.filter((item) => item.employee === currentUser);
 
-    customers = customers.filter(
-      (item) => item.employee === currentUser
-    );
+const filteredCustomers =
+  role === "Admin" || role === "Head of Sales & Marketing"
+    ? customers
+    : customers.filter((item) => item.employee === currentUser);
 
-    projects = projects.filter(
-      (item) => item.employee === currentUser
-    );
+const filteredProjects =
+  role === "Admin" || role === "Head of Sales & Marketing"
+    ? projects
+    : projects.filter((item) => item.employee === currentUser);
 
-    quotations = quotations.filter(
-      (item) => item.employee === currentUser
-    );
+const filteredQuotations =
+  role === "Admin" || role === "Head of Sales & Marketing"
+    ? quotations
+    : quotations.filter((item) => item.employee === currentUser);
 
-    sales = sales.filter(
-      (item) => item.employee === currentUser
-    );
-  }
+const filteredSales =
+  role === "Admin" || role === "Head of Sales & Marketing"
+    ? sales
+    : sales.filter((item) => item.employee === currentUser);
 
   const cards = [
   {
