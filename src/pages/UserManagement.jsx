@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  collection,
+  getDocs,
+  deleteDoc,
+} from "firebase/firestore";
 function UserManagement() {
   const [users, setUsers] = useState([]);
   const [name, setName] = useState("");
@@ -10,9 +16,19 @@ function UserManagement() {
   const [role, setRole] = useState("Sales Executive");
 
   useEffect(() => {
-    const savedUsers = JSON.parse(localStorage.getItem("crmUsers")) || [];
-    setUsers(savedUsers);
-  }, []);
+  loadUsers();
+}, []);
+
+const loadUsers = async () => {
+  const snapshot = await getDocs(collection(db, "users"));
+
+  const userList = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  setUsers(userList);
+};
 
   const addUser = async () => {
   if (!name || !username || !password) {
@@ -35,8 +51,24 @@ function UserManagement() {
       username,
       role,
     });
+    const newUser = {
+  id: userCredential.user.uid,
+  name,
+  username,
+  role,
+};
+
+const updatedUsers = [...users, newUser];
+
+setUsers(updatedUsers);
+
+localStorage.setItem(
+  "crmUsers",
+  JSON.stringify(updatedUsers)
+);
 
     alert("User Added Successfully!");
+    await loadUsers();
 
     setName("");
     setUsername("");
@@ -48,11 +80,10 @@ function UserManagement() {
   }
 };
 
-  const deleteUser = (id) => {
-    const updatedUsers = users.filter((user) => user.id !== id);
-    setUsers(updatedUsers);
-    localStorage.setItem("crmUsers", JSON.stringify(updatedUsers));
-  };
+  const deleteUser = async (id) => {
+  await deleteDoc(doc(db, "users", id));
+  await loadUsers();
+};
 
   return (
     <div style={{ padding: "20px" }}>

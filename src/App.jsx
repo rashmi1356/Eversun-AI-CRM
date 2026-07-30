@@ -19,6 +19,7 @@ import Attendance from "./pages/Attendance";
 import ProjectTracker from "./pages/ProjectTracker";
 import Analytics from "./pages/Analytics";
 import CustomerPortal from "./pages/CustomerPortal";
+import EMICalculator from "./pages/EMICalculator";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -26,6 +27,7 @@ function App() {
   );
 
   const [page, setPage] = useState("dashboard");
+  console.log("Current Page:", page);
 
   const [quotationData, setQuotationData] = useState(null);
 
@@ -65,9 +67,10 @@ function App() {
 
         {page === "dashboard" && (
           <Dashboard
-            customers={customers}
-            quotations={quotations}
-          />
+  customers={customers}
+  quotations={quotations}
+  setPage={setPage}
+/>
         )}
 
         {page === "analytics" && <Analytics />}
@@ -81,6 +84,7 @@ function App() {
         )}
 
         {page === "sales" && <Sales />}
+        {page === "emi" && <EMICalculator />}
 
         {page === "quotations" && (
           <Quotations

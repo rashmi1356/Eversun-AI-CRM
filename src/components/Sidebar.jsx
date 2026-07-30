@@ -62,7 +62,14 @@ function Sidebar({ setPage }) {
         <div style={{ padding: "10px" }} onClick={() => menuClick("attendance")}>📅 Attendance</div>
         <div style={{ padding: "10px" }} onClick={() => menuClick("projects")}>☀️ Projects</div>
        {(role === "Admin" || role === "Head of Sales & Marketing") && (
+        
   <>
+  <div
+  style={{ padding: "10px" }}
+  onClick={() => menuClick("emi")}
+>
+  💰 EMI Calculator
+</div>
     <div
       style={{ padding: "10px" }}
       onClick={() => menuClick("reports")}

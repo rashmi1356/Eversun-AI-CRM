@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
 
 function Leads() {
   const [employees, setEmployees] = useState([]);
@@ -25,21 +27,31 @@ const [leads, setLeads] = useState(() => {
   const [editIndex, setEditIndex] = useState(null);
 
   useEffect(() => {
-  // Save leads
   localStorage.setItem("leads", JSON.stringify(leads));
-
-  // Load employees
-  const users = JSON.parse(localStorage.getItem("crmUsers")) || [];
-
-  setEmployees(
-    users.filter(
-      (u) =>
-        u.role === "Sales Executive" ||
-        u.role === "Survey Engineer" ||
-        u.role === "Service Engineer"
-    )
-  );
+  loadEmployees();
 }, [leads]);
+
+  const loadEmployees = async () => {
+  try {
+    const snapshot = await getDocs(collection(db, "users"));
+
+    const employeeList = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter(
+        (u) =>
+          u.role === "Sales Executive" ||
+          u.role === "Sales Manager" ||
+          u.role === "Head of Sales & Marketing"
+      );
+
+    setEmployees(employeeList);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const handleChange = (e) => {
     setForm({

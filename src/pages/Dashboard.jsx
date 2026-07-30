@@ -1,11 +1,26 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./Dashboard.css";
 
-function Dashboard() {
+function Dashboard({ setPage }) {
   const currentUser = localStorage.getItem("userName") || "User";
   const role = localStorage.getItem("role") || "";
 
-  let leads = JSON.parse(localStorage.getItem("leads")) || [];
+  const [leads, setLeads] = useState([]);
+
+useEffect(() => {
+  const loadData = () => {
+    const savedLeads = JSON.parse(localStorage.getItem("leads")) || [];
+    setLeads(savedLeads);
+  };
+
+  loadData();
+
+  window.addEventListener("storage", loadData);
+
+  return () => {
+    window.removeEventListener("storage", loadData);
+  };
+}, []);
   let customers = JSON.parse(localStorage.getItem("customers")) || [];
   let projects = JSON.parse(localStorage.getItem("projects")) || [];
   let quotations = JSON.parse(localStorage.getItem("quotations")) || [];
@@ -39,44 +54,34 @@ function Dashboard() {
 
   const cards = [
   {
-    title:
-      role === "Admin" || role === "Head of Sales & Marketing"
-        ? "👥 Total Leads"
-        : "👥 My Leads",
+    title: role === "Admin" || role === "Head of Sales & Marketing" ? "👥 Total Leads" : "👥 My Leads",
     value: leads.length,
     color: "#4CAF50",
+    page: "leads",
   },
   {
-    title:
-      role === "Admin" || role === "Head of Sales & Marketing"
-        ? "👤 Total Customers"
-        : "👤 My Customers",
+    title: role === "Admin" || role === "Head of Sales & Marketing" ? "👤 Total Customers" : "👤 My Customers",
     value: customers.length,
     color: "#2196F3",
+    page: "customers",
   },
   {
-    title:
-      role === "Admin" || role === "Head of Sales & Marketing"
-        ? "☀️ Total Projects"
-        : "☀️ My Projects",
+    title: role === "Admin" || role === "Head of Sales & Marketing" ? "☀️ Total Projects" : "☀️ My Projects",
     value: projects.length,
     color: "#FF9800",
+    page: "projects",
   },
   {
-    title:
-      role === "Admin" || role === "Head of Sales & Marketing"
-        ? "📄 Total Quotations"
-        : "📄 My Quotations",
+    title: role === "Admin" || role === "Head of Sales & Marketing" ? "📄 Total Quotations" : "📄 My Quotations",
     value: quotations.length,
     color: "#9C27B0",
+    page: "quotations",
   },
   {
-    title:
-      role === "Admin" || role === "Head of Sales & Marketing"
-        ? "💰 Total Sales"
-        : "💰 My Sales",
+    title: role === "Admin" || role === "Head of Sales & Marketing" ? "💰 Total Sales" : "💰 My Sales",
     value: sales.length,
     color: "#009688",
+    page: "sales",
   },
 ];
 
@@ -106,7 +111,7 @@ function Dashboard() {
       </div>
 
       <div className="dashboard-title">
-        <h1>📊 Eversun AI CRM Dashboard</h1>
+        <h1>📊 Eversun AIg CRM Dashboard</h1>
         <h3>Welcome, {currentUser}</h3>
       </div>
       <div className="dashboard-cards">
@@ -128,9 +133,12 @@ function Dashboard() {
               {card.value}
             </h1>
 
-            <button className="view-btn">
-              View Details →
-            </button>
+            <button
+  className="view-btn"
+  onClick={() => setPage(card.page)}
+>
+  View Details →
+</button>
           </div>
         ))}
 
