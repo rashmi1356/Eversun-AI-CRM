@@ -139,21 +139,24 @@ function Customer() {
     // Admin & Head of Sales can assign customer
     if (canViewAll) {
 
-      customerData = {
-        ...form,
-        employee: form.employee,
-        createdBy: currentUser.name,
-      };
+     customerData = {
+  ...form,
+  employee: form.employee,
+  createdBy: currentUser.name,
+  createdByRole: currentUser.role,
+  createdAt: serverTimestamp(),
+};
 
     } else {
 
       // Sales Executive & Others
       customerData = {
-        ...form,
-        employee: currentUser.name,
-        createdBy: currentUser.name,
-      };
-
+  ...form,
+  employee: currentUser.name,
+  createdBy: currentUser.name,
+  createdByRole: currentUser.role,
+  createdAt: serverTimestamp(),
+};
     }
 
     if (editIndex !== null) {

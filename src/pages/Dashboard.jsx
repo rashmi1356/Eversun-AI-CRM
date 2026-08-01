@@ -14,12 +14,17 @@ function Dashboard({ setPage }) {
 
   // Logged In User
   const currentUser =
-    localStorage.getItem("userName") || "User";
+    localStorage.getItem("userName") || "";
 
   const role =
     localStorage.getItem("role") || "";
 
-  // Firestore Collections
+  // Admin & Head of Sales
+  const canViewAll =
+    role === "Admin" ||
+    role === "Head of Sales & Marketing";
+
+  // Firebase Collections
   const leadsRef = collection(db, "leads");
   const customersRef = collection(db, "customers");
   const projectsRef = collection(db, "projects");
@@ -33,71 +38,61 @@ function Dashboard({ setPage }) {
   const [quotations, setQuotations] = useState([]);
   const [sales, setSales] = useState([]);
 
-  // Dashboard Revenue
-  const totalRevenue = sales.reduce(
-    (sum, item) => sum + Number(item.price || 0),
-    0
-  );
-  // Load Dashboard Data
+  // Load Dashboard
   const loadDashboard = async () => {
 
     try {
 
-      // Leads
-      const leadSnapshot = await getDocs(
+      const leadSnap = await getDocs(
         query(leadsRef, orderBy("createdAt", "desc"))
       );
 
       setLeads(
-        leadSnapshot.docs.map((doc) => ({
+        leadSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }))
       );
 
-      // Customers
-      const customerSnapshot = await getDocs(
+      const customerSnap = await getDocs(
         query(customersRef, orderBy("createdAt", "desc"))
       );
 
       setCustomers(
-        customerSnapshot.docs.map((doc) => ({
+        customerSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }))
       );
 
-      // Projects
-      const projectSnapshot = await getDocs(
+      const projectSnap = await getDocs(
         query(projectsRef, orderBy("createdAt", "desc"))
       );
 
       setProjects(
-        projectSnapshot.docs.map((doc) => ({
+        projectSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }))
       );
 
-      // Quotations
-      const quotationSnapshot = await getDocs(
+      const quotationSnap = await getDocs(
         query(quotationsRef, orderBy("createdAt", "desc"))
       );
 
       setQuotations(
-        quotationSnapshot.docs.map((doc) => ({
+        quotationSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }))
       );
 
-      // Sales
-      const salesSnapshot = await getDocs(
+      const salesSnap = await getDocs(
         query(salesRef, orderBy("createdAt", "desc"))
       );
 
       setSales(
-        salesSnapshot.docs.map((doc) => ({
+        salesSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }))
@@ -116,12 +111,7 @@ function Dashboard({ setPage }) {
     loadDashboard();
 
   }, []);
-
-  // Role Based Access
-  const canViewAll =
-    role === "Admin" ||
-    role === "Head of Sales & Marketing";
-
+  // Role Based Data
   const filteredLeads = canViewAll
     ? leads
     : leads.filter(
@@ -152,289 +142,299 @@ function Dashboard({ setPage }) {
         (item) => item.createdBy === currentUser
       );
 
+  // Revenue
+  const totalRevenue = filteredSales.reduce(
+    (total, sale) =>
+      total + Number(sale.price || 0),
+    0
+  );
+
+  // Dashboard Cards
   const cards = [
+
     {
-      title: "👥 Total Leads",
+      title: canViewAll
+        ? "👥 Total Leads"
+        : "👥 My Leads",
       value: filteredLeads.length,
       color: "#4CAF50",
       page: "leads",
     },
+
     {
-      title: "👤 Total Customers",
+      title: canViewAll
+        ? "👤 Total Customers"
+        : "👤 My Customers",
       value: filteredCustomers.length,
       color: "#2196F3",
       page: "customers",
     },
+
     {
-      title: "☀️ Total Projects",
+      title: canViewAll
+        ? "☀️ Total Projects"
+        : "☀️ My Projects",
       value: filteredProjects.length,
       color: "#FF9800",
       page: "projects",
     },
+
     {
-      title: "📄 Total Quotations",
+      title: canViewAll
+        ? "📄 Total Quotations"
+        : "📄 My Quotations",
       value: filteredQuotations.length,
       color: "#9C27B0",
       page: "quotations",
     },
+
     {
-      title: "💰 Total Sales",
+      title: canViewAll
+        ? "💰 Total Sales"
+        : "💰 My Sales",
       value: filteredSales.length,
       color: "#009688",
       page: "sales",
     },
+
+    {
+      title: canViewAll
+        ? "💵 Total Revenue"
+        : "💵 My Revenue",
+      value: "₹" + totalRevenue.toLocaleString("en-IN"),
+      color: "#E91E63",
+      page: "sales",
+    },
+
   ];
   return (
-  <div className="dashboard-container">
+    <div className="dashboard-container">
 
-    {/* Top Banner */}
+      {/* Top Banner */}
 
-    <div className="top-banner">
+      <div className="top-banner">
 
-      <div className="company-box">
+        <div className="company-box">
 
-        <img
-          src="/eversun-logo.png"
-          alt="Logo"
-          className="banner-logo"
-        />
+          <img
+            src="/eversun-logo.png"
+            alt="Eversun"
+            className="banner-logo"
+          />
 
-        <div>
+          <div>
+            <h2>Eversun AI CRM</h2>
+            <p>PM Surya Ghar Management System</p>
+          </div>
 
-          <h2>Eversun AI CRM</h2>
+        </div>
 
-          <p>PM Surya Ghar Management System</p>
-
+        <div className="user-box">
+          <h2>{currentUser}</h2>
+          <p>{role}</p>
         </div>
 
       </div>
 
-      <div className="user-box">
+      {/* Dashboard Title */}
 
-        <h2>{currentUser}</h2>
+      <div className="dashboard-title">
 
-        <p>{role}</p>
+        <h1>📊 Eversun AI CRM Dashboard</h1>
 
-      </div>
-
-    </div>
-
-    {/* Title */}
-
-    <div className="dashboard-title">
-
-      <h1>📊 Eversun AI CRM Dashboard</h1>
-
-      <h3>Welcome, {currentUser}</h3>
-
-    </div>
-
-    {/* Dashboard Cards */}
-
-    <div className="dashboard-cards">
-
-      {cards.map((card) => (
-
-        <div
-          key={card.title}
-          className="dashboard-card"
-        >
-
-          <h3>{card.title}</h3>
-
-          <h1
-            style={{
-              color: card.color,
-              margin: "15px 0",
-              fontSize: "42px",
-            }}
-          >
-            {card.value}
-          </h1>
-
-          <button
-            className="view-btn"
-            onClick={() => setPage(card.page)}
-          >
-            View Details →
-          </button>
-
-        </div>
-
-      ))}
-
-      {/* Revenue Card */}
-
-      <div className="dashboard-card">
-
-        <h3>💵 Revenue</h3>
-
-        <h1
-          style={{
-            color: "#E91E63",
-            margin: "15px 0",
-            fontSize: "36px",
-          }}
-        >
-          ₹{totalRevenue.toLocaleString("en-IN")}
-        </h1>
+        <h3>
+          Welcome, {currentUser}
+        </h3>
 
       </div>
 
-    </div>
+      {/* Dashboard Cards */}
 
-    {/* Recent Data */}
+      <div className="dashboard-cards">
 
-    <div className="dashboard-row">
+        {cards.map((card, index) => (
 
-      <div className="dashboard-box">
+          <div
+            key={index}
+            className="dashboard-card"
+          >
 
-        <h2>📋 Recent Leads</h2>
+            <h3>{card.title}</h3>
 
-        {filteredLeads.length === 0 ? (
-
-          <p>No Leads Available</p>
-
-        ) : (
-
-          filteredLeads.slice(0, 5).map((lead) => (
-
-            <div
-              key={lead.id}
-              className="list-item"
+            <h1
+              style={{
+                color: card.color,
+                margin: "15px 0",
+                fontSize: "38px",
+              }}
             >
+              {card.value}
+            </h1>
 
-              <strong>{lead.name}</strong>
-
-              <br />
-
-              📞 {lead.mobile}
-
-            </div>
-
-          ))
-
-        )}
-
-      </div>
-
-      <div className="dashboard-box">
-
-        <h2>☀️ Recent Projects</h2>
-
-        {filteredProjects.length === 0 ? (
-
-          <p>No Projects Available</p>
-
-        ) : (
-
-          filteredProjects.slice(0, 5).map((project) => (
-
-            <div
-              key={project.id}
-              className="list-item"
+            <button
+              className="view-btn"
+              onClick={() => setPage(card.page)}
             >
+              View Details →
+            </button>
 
-              <strong>{project.customer}</strong>
+          </div>
 
-              <br />
-
-              {project.status}
-
-            </div>
-
-          ))
-
-        )}
+        ))}
 
       </div>
 
-    </div>
+      {/* Recent Data */}
 
-    {/* Quick Actions */}
+      <div className="dashboard-row">
 
-    <div className="dashboard-row">
+        <div className="dashboard-box">
 
-      <div className="dashboard-box">
+          <h2>📋 Recent Leads</h2>
 
-        <h2>⚡ Quick Actions</h2>
+          {filteredLeads.length === 0 ? (
 
-        <div className="quick-actions">
+            <p>No Leads Available</p>
 
-          <button
-            className="action-btn"
-            onClick={() => setPage("leads")}
-          >
-            ➕ Add Lead
-          </button>
+          ) : (
 
-          <button
-            className="action-btn"
-            onClick={() => setPage("customers")}
-          >
-            👤 Customers
-          </button>
+            filteredLeads.slice(0,5).map((lead)=>(
 
-          <button
-            className="action-btn"
-            onClick={() => setPage("quotations")}
-          >
-            📄 Quotations
-          </button>
+              <div
+                key={lead.id}
+                className="list-item"
+              >
 
-          <button
-            className="action-btn"
-            onClick={() => setPage("projects")}
-          >
-            ☀️ Projects
-          </button>
+                <strong>{lead.name}</strong>
+
+                <br />
+
+                📞 {lead.mobile}
+
+              </div>
+
+            ))
+
+          )}
+
+        </div>
+
+        <div className="dashboard-box">
+
+          <h2>☀️ Recent Projects</h2>
+
+          {filteredProjects.length === 0 ? (
+
+            <p>No Projects Available</p>
+
+          ) : (
+
+            filteredProjects.slice(0,5).map((project)=>(
+
+              <div
+                key={project.id}
+                className="list-item"
+              >
+
+                <strong>{project.customer}</strong>
+
+                <br />
+
+                {project.status}
+
+              </div>
+
+            ))
+
+          )}
 
         </div>
 
       </div>
 
-      <div className="dashboard-box">
+      {/* Quick Actions */}
 
-        <h2>📅 Today's Information</h2>
+      <div className="dashboard-row">
+
+        <div className="dashboard-box">
+
+          <h2>⚡ Quick Actions</h2>
+
+          <div className="quick-actions">
+
+            <button
+              className="action-btn"
+              onClick={() => setPage("leads")}
+            >
+              ➕ Add Lead
+            </button>
+
+            <button
+              className="action-btn"
+              onClick={() => setPage("customers")}
+            >
+              👤 Add Customer
+            </button>
+
+            <button
+              className="action-btn"
+              onClick={() => setPage("quotations")}
+            >
+              📄 Create Quotation
+            </button>
+
+            <button
+              className="action-btn"
+              onClick={() => setPage("projects")}
+            >
+              ☀️ Add Project
+            </button>
+
+          </div>
+
+        </div>
+
+        <div className="dashboard-box">
+
+          <h2>📅 Today's Information</h2>
+
+          <p>
+            <strong>Date :</strong>{" "}
+            {new Date().toLocaleDateString("en-IN")}
+          </p>
+
+          <p>
+            <strong>Time :</strong>{" "}
+            {new Date().toLocaleTimeString("en-IN")}
+          </p>
+
+          <p>
+            <strong>User :</strong> {currentUser}
+          </p>
+
+          <p>
+            <strong>Role :</strong> {role}
+          </p>
+
+        </div>
+
+      </div>
+      {/* Footer */}
+
+      <div className="dashboard-footer">
 
         <p>
-          <strong>Date :</strong>{" "}
-          {new Date().toLocaleDateString("en-IN")}
+          © 2026 <strong>Eversun Energiaa</strong>. All Rights Reserved.
         </p>
 
         <p>
-          <strong>Time :</strong>{" "}
-          {new Date().toLocaleTimeString("en-IN")}
-        </p>
-
-        <p>
-          <strong>User :</strong> {currentUser}
-        </p>
-
-        <p>
-          <strong>Role :</strong> {role}
+          Developed by Eversun AI CRM
         </p>
 
       </div>
 
     </div>
-    {/* Footer */}
-
-    <div className="dashboard-footer">
-
-      <p>
-        © 2026 <strong>Eversun Energiaa</strong>. All Rights Reserved.
-      </p>
-
-      <p>
-        Developed by Eversun AI CRM
-      </p>
-
-    </div>
-
-  </div>
-);
-
+  );
 }
 
 export default Dashboard;

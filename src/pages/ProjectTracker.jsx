@@ -78,14 +78,15 @@ const saveProject = async () => {
 
     } else {
 
-      await addDoc(projectRef, {
-        customer,
-        mobile,
-        capacity,
-        status,
-        createdBy: currentUser.name,
-        createdAt: serverTimestamp(),
-      });
+     await addDoc(projectRef, {
+  customer,
+  mobile,
+  capacity,
+  status,
+  createdBy: currentUser.name,
+  createdByRole: currentUser.role,
+  createdAt: serverTimestamp(),
+});
 
     }
 

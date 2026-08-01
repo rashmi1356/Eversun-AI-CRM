@@ -3,16 +3,14 @@ import {
   collection,
   addDoc,
   getDocs,
-  deleteDoc,
   updateDoc,
+  deleteDoc,
   doc,
   query,
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-
 import { db } from "../firebase";
-
 
 function Leads() {
 
@@ -23,19 +21,20 @@ function Leads() {
     role: localStorage.getItem("role") || "",
   };
 
-  // Employees
+  // Admin & Head of Sales
+  const canViewAll =
+    currentUser.role === "Admin" ||
+    currentUser.role === "Head of Sales & Marketing";
+
+  // Firebase
+  const leadRef = collection(db, "leads");
+
+  // States
   const [employees, setEmployees] = useState([]);
-
-  // Leads
- const [leads, setLeads] = useState([]);
-  // Search
+  const [leads, setLeads] = useState([]);
   const [search, setSearch] = useState("");
-  
+  const [editId, setEditId] = useState(null);
 
-  // Edit Index
-  const [editIndex, setEditIndex] = useState(null);
-
-  // Lead Form
   const [form, setForm] = useState({
     name: "",
     mobile: "",
@@ -44,37 +43,8 @@ function Leads() {
     system: "",
     bill: "",
     employee: "",
-    status: "New",
   });
-  const leadRef = collection(db, "leads");
-  const loadLeads = async () => {
-  try {
-    const q = query(leadRef, orderBy("createdAt", "desc"));
-
-    const snapshot = await getDocs(q);
-
-    const leadList = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    setLeads(leadList);
-  } catch (error) {
-    console.log(error);
-  }
-};
-
   // Load Employees
-  useEffect(() => {
-  loadEmployees();
-  loadLeads();
-}, []);
-
-  // Load Leads
-  
-  // Save Leads
-  
-
   const loadEmployees = async () => {
     try {
 
@@ -92,27 +62,43 @@ function Leads() {
     }
   };
 
-  // Can View All
-  const canViewAll =
-    currentUser.role === "Admin" ||
-    currentUser.role === "Head of Sales & Marketing";
+  // Load Leads
+  const loadLeads = async () => {
+    try {
 
-  // Filter Leads
-  const filteredLeads = leads.filter((lead) => {
+      const q = query(
+        leadRef,
+        orderBy("createdAt", "desc")
+      );
 
-    const match = lead.name
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
+      const snapshot = await getDocs(q);
 
-    if (canViewAll) return match;
+      const leadList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-    return (
-      match &&
-      lead.employee === currentUser.name
-    );
+      if (canViewAll) {
+        setLeads(leadList);
+      } else {
+        setLeads(
+          leadList.filter(
+            (item) => item.createdBy === currentUser.name
+          )
+        );
+      }
 
-  });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
+  useEffect(() => {
+    loadEmployees();
+    loadLeads();
+  }, []);
+
+  // Handle Form Change
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -129,107 +115,124 @@ function Leads() {
 
     let lead = {};
 
+    // Admin & Head of Sales
     if (canViewAll) {
 
-      // Admin & Head of Sales can assign employee
       lead = {
         ...form,
         employee: form.employee,
         createdBy: currentUser.name,
+        createdByRole: currentUser.role,
+        createdAt: serverTimestamp(),
       };
 
     } else {
 
-      // Employee's own lead
+      // Sales Executive
       lead = {
         ...form,
         employee: currentUser.name,
         createdBy: currentUser.name,
+        createdByRole: currentUser.role,
+        createdAt: serverTimestamp(),
       };
 
     }
 
-    if (editIndex !== null) {
+    try {
 
-  await updateDoc(doc(db, "leads", editIndex), {
-    ...lead,
-  });
+      if (editId) {
 
-  loadLeads();
+        await updateDoc(
+          doc(db, "leads", editId),
+          {
+            ...lead,
+          }
+        );
 
-  setEditIndex(null);
+        alert("Lead Updated Successfully");
 
-} else {
+        setEditId(null);
 
-      await addDoc(leadRef, {
-  ...lead,
-  createdAt: serverTimestamp(),
-});
+      } else {
 
-loadLeads();
+        await addDoc(
+          leadRef,
+          lead
+        );
+
+        alert("Lead Saved Successfully");
+
+      }
+
+      loadLeads();
+
+      setForm({
+        name: "",
+        mobile: "",
+        village: "",
+        district: "",
+        system: "",
+        bill: "",
+        employee: "",
+      });
+
+    } catch (error) {
+
+      console.log(error);
+
     }
 
-    // Clear Form
-    setForm({
-      name: "",
-      mobile: "",
-      village: "",
-      district: "",
-      system: "",
-      bill: "",
-      employee: "",
-      status: "New",
-    });
+  };
+  // Delete Lead
+  const deleteLead = async (id) => {
+
+    if (!window.confirm("Delete this lead?")) return;
+
+    try {
+
+      await deleteDoc(doc(db, "leads", id));
+
+      loadLeads();
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
 
   };
 
   // Edit Lead
-  const editLead = (index) => {
-  const lead = filteredLeads[index];
+  const editLead = (lead) => {
 
-  setForm({
-    name: lead.name,
-    mobile: lead.mobile,
-    village: lead.village,
-    district: lead.district,
-    system: lead.system,
-    bill: lead.bill,
-    employee: lead.employee,
-    status: lead.status,
-  });
+    setEditId(lead.id);
 
-  setEditIndex(lead.id);
-};
+    setForm({
+      name: lead.name || "",
+      mobile: lead.mobile || "",
+      village: lead.village || "",
+      district: lead.district || "",
+      system: lead.system || "",
+      bill: lead.bill || "",
+      employee: lead.employee || "",
+    });
 
-  // Delete Lead
-  const deleteLead = async (index) => {
+  };
 
-  if (!window.confirm("Delete this lead?")) return;
+  // Search
+  const filteredLeads = leads.filter((item) =>
+    (item.name || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
-  try {
-
-    const lead = filteredLeads[index];
-
-    await deleteDoc(doc(db, "leads", lead.id));
-
-    loadLeads();
-
-  } catch (error) {
-
-    console.log(error);
-
-    alert("Unable to delete lead.");
-
-  }
-
-};
   return (
     <div style={{ padding: "20px" }}>
 
       <h2>👥 Lead Management</h2>
 
       <input
-        type="text"
         name="name"
         placeholder="Customer Name"
         value={form.name}
@@ -239,7 +242,6 @@ loadLeads();
       <br /><br />
 
       <input
-        type="text"
         name="mobile"
         placeholder="Mobile Number"
         value={form.mobile}
@@ -249,7 +251,6 @@ loadLeads();
       <br /><br />
 
       <input
-        type="text"
         name="village"
         placeholder="Village / City"
         value={form.village}
@@ -259,7 +260,6 @@ loadLeads();
       <br /><br />
 
       <input
-        type="text"
         name="district"
         placeholder="District"
         value={form.district}
@@ -268,23 +268,16 @@ loadLeads();
 
       <br /><br />
 
-      <select
+      <input
         name="system"
+        placeholder="System Size"
         value={form.system}
         onChange={handleChange}
-      >
-        <option value="">Select System Size</option>
-        <option>1 KW</option>
-        <option>2 KW</option>
-        <option>3 KW</option>
-        <option>5 KW</option>
-        <option>10 KW</option>
-      </select>
+      />
 
       <br /><br />
 
       <input
-        type="number"
         name="bill"
         placeholder="Monthly Electricity Bill"
         value={form.bill}
@@ -304,9 +297,10 @@ loadLeads();
 
             {employees.map((emp) => (
               <option key={emp.id} value={emp.name}>
-                {emp.name} ({emp.role})
+                {emp.name}
               </option>
             ))}
+
           </select>
 
           <br /><br />
@@ -314,16 +308,13 @@ loadLeads();
       )}
 
       <button onClick={saveLead}>
-        {editIndex !== null ? "Update Lead" : "Save Lead"}
+        {editId ? "Update Lead" : "Save Lead"}
       </button>
 
       <hr />
 
-      <h3>Saved Leads</h3>
-
       <input
-        type="text"
-        placeholder="🔍 Search by Customer Name"
+        placeholder="Search Customer"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -346,9 +337,9 @@ loadLeads();
 
         <tbody>
 
-          {filteredLeads.map((lead, index) => (
+          {filteredLeads.map((lead) => (
 
-            <tr key={index}>
+            <tr key={lead.id}>
 
               <td>{lead.name}</td>
               <td>{lead.mobile}</td>
@@ -361,13 +352,13 @@ loadLeads();
               <td>
 
                 <button
-                  onClick={() => editLead(index)}
+                  onClick={() => editLead(lead)}
                 >
                   Edit
                 </button>
 
                 <button
-                  onClick={() => deleteLead(index)}
+                  onClick={() => deleteLead(lead.id)}
                 >
                   Delete
                 </button>
