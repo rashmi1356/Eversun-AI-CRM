@@ -102,6 +102,8 @@ function Sidebar({ setPage }) {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userName");
     localStorage.removeItem("role");
+    localStorage.removeItem("userId");
+
     window.location.reload();
   }}
 >

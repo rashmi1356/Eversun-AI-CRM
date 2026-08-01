@@ -10,10 +10,12 @@ function Login({ setIsLoggedIn }) {
   const handleLogin = async () => {
     // Temporary Admin Login
 if (username === "admin" && password === "1234") {
-  localStorage.setItem("isLoggedIn", "true");
-  localStorage.setItem("userName", "Admin");
-  localStorage.setItem("role", "Admin");
-  setIsLoggedIn(true);
+ localStorage.setItem("isLoggedIn", "true");
+localStorage.setItem("userName", data.name);
+localStorage.setItem("role", data.role);
+localStorage.setItem("userId", uid);
+
+setIsLoggedIn(true);
   return;
 }
  try {
