@@ -1,262 +1,440 @@
 import React, { useState, useEffect } from "react";
 import "./Dashboard.css";
 
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
+
 function Dashboard({ setPage }) {
-  const currentUser = localStorage.getItem("userName") || "User";
-  const role = localStorage.getItem("role") || "";
 
+  // Logged In User
+  const currentUser =
+    localStorage.getItem("userName") || "User";
+
+  const role =
+    localStorage.getItem("role") || "";
+
+  // Firestore Collections
+  const leadsRef = collection(db, "leads");
+  const customersRef = collection(db, "customers");
+  const projectsRef = collection(db, "projects");
+  const quotationsRef = collection(db, "quotations");
+  const salesRef = collection(db, "sales");
+
+  // States
   const [leads, setLeads] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [quotations, setQuotations] = useState([]);
+  const [sales, setSales] = useState([]);
 
-useEffect(() => {
-  const loadData = () => {
-    const savedLeads = JSON.parse(localStorage.getItem("leads")) || [];
-    setLeads(savedLeads);
+  // Dashboard Revenue
+  const totalRevenue = sales.reduce(
+    (sum, item) => sum + Number(item.price || 0),
+    0
+  );
+  // Load Dashboard Data
+  const loadDashboard = async () => {
+
+    try {
+
+      // Leads
+      const leadSnapshot = await getDocs(
+        query(leadsRef, orderBy("createdAt", "desc"))
+      );
+
+      setLeads(
+        leadSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      );
+
+      // Customers
+      const customerSnapshot = await getDocs(
+        query(customersRef, orderBy("createdAt", "desc"))
+      );
+
+      setCustomers(
+        customerSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      );
+
+      // Projects
+      const projectSnapshot = await getDocs(
+        query(projectsRef, orderBy("createdAt", "desc"))
+      );
+
+      setProjects(
+        projectSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      );
+
+      // Quotations
+      const quotationSnapshot = await getDocs(
+        query(quotationsRef, orderBy("createdAt", "desc"))
+      );
+
+      setQuotations(
+        quotationSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      );
+
+      // Sales
+      const salesSnapshot = await getDocs(
+        query(salesRef, orderBy("createdAt", "desc"))
+      );
+
+      setSales(
+        salesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      );
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
+
   };
 
-  loadData();
+  useEffect(() => {
 
-  window.addEventListener("storage", loadData);
+    loadDashboard();
 
-  return () => {
-    window.removeEventListener("storage", loadData);
-  };
-}, []);
-  let customers = JSON.parse(localStorage.getItem("customers")) || [];
-  let projects = JSON.parse(localStorage.getItem("projects")) || [];
-  let quotations = JSON.parse(localStorage.getItem("quotations")) || [];
-  let sales = JSON.parse(localStorage.getItem("sales")) || [];
+  }, []);
 
-  // Show only employee data
- const filteredLeads =
-  role === "Admin" || role === "Head of Sales & Marketing"
+  // Role Based Access
+  const canViewAll =
+    role === "Admin" ||
+    role === "Head of Sales & Marketing";
+
+  const filteredLeads = canViewAll
     ? leads
-    : leads.filter((item) => item.employee === currentUser);
+    : leads.filter(
+        (item) => item.createdBy === currentUser
+      );
 
-const filteredCustomers =
-  role === "Admin" || role === "Head of Sales & Marketing"
+  const filteredCustomers = canViewAll
     ? customers
-    : customers.filter((item) => item.employee === currentUser);
+    : customers.filter(
+        (item) => item.createdBy === currentUser
+      );
 
-const filteredProjects =
-  role === "Admin" || role === "Head of Sales & Marketing"
+  const filteredProjects = canViewAll
     ? projects
-    : projects.filter((item) => item.employee === currentUser);
+    : projects.filter(
+        (item) => item.createdBy === currentUser
+      );
 
-const filteredQuotations =
-  role === "Admin" || role === "Head of Sales & Marketing"
+  const filteredQuotations = canViewAll
     ? quotations
-    : quotations.filter((item) => item.employee === currentUser);
+    : quotations.filter(
+        (item) => item.createdBy === currentUser
+      );
 
-const filteredSales =
-  role === "Admin" || role === "Head of Sales & Marketing"
+  const filteredSales = canViewAll
     ? sales
-    : sales.filter((item) => item.employee === currentUser);
+    : sales.filter(
+        (item) => item.createdBy === currentUser
+      );
 
   const cards = [
-  {
-    title: role === "Admin" || role === "Head of Sales & Marketing" ? "👥 Total Leads" : "👥 My Leads",
-    value: leads.length,
-    color: "#4CAF50",
-    page: "leads",
-  },
-  {
-    title: role === "Admin" || role === "Head of Sales & Marketing" ? "👤 Total Customers" : "👤 My Customers",
-    value: customers.length,
-    color: "#2196F3",
-    page: "customers",
-  },
-  {
-    title: role === "Admin" || role === "Head of Sales & Marketing" ? "☀️ Total Projects" : "☀️ My Projects",
-    value: projects.length,
-    color: "#FF9800",
-    page: "projects",
-  },
-  {
-    title: role === "Admin" || role === "Head of Sales & Marketing" ? "📄 Total Quotations" : "📄 My Quotations",
-    value: quotations.length,
-    color: "#9C27B0",
-    page: "quotations",
-  },
-  {
-    title: role === "Admin" || role === "Head of Sales & Marketing" ? "💰 Total Sales" : "💰 My Sales",
-    value: sales.length,
-    color: "#009688",
-    page: "sales",
-  },
-];
-
+    {
+      title: "👥 Total Leads",
+      value: filteredLeads.length,
+      color: "#4CAF50",
+      page: "leads",
+    },
+    {
+      title: "👤 Total Customers",
+      value: filteredCustomers.length,
+      color: "#2196F3",
+      page: "customers",
+    },
+    {
+      title: "☀️ Total Projects",
+      value: filteredProjects.length,
+      color: "#FF9800",
+      page: "projects",
+    },
+    {
+      title: "📄 Total Quotations",
+      value: filteredQuotations.length,
+      color: "#9C27B0",
+      page: "quotations",
+    },
+    {
+      title: "💰 Total Sales",
+      value: filteredSales.length,
+      color: "#009688",
+      page: "sales",
+    },
+  ];
   return (
-    <div className="dashboard-container">
+  <div className="dashboard-container">
 
-      <div className="top-banner">
+    {/* Top Banner */}
 
-        <div className="company-box">
-          <img
-            src="/eversun-logo.png"
-            alt="Logo"
-            className="banner-logo"
-          />
+    <div className="top-banner">
 
-          <div>
-            <h2>Eversun AI CRM</h2>
-            <p>PM Surya Ghar Management System</p>
-          </div>
-        </div>
+      <div className="company-box">
 
-        <div className="user-box">
-          <h2>{currentUser}</h2>
-          <p>{role}</p>
+        <img
+          src="/eversun-logo.png"
+          alt="Logo"
+          className="banner-logo"
+        />
+
+        <div>
+
+          <h2>Eversun AI CRM</h2>
+
+          <p>PM Surya Ghar Management System</p>
+
         </div>
 
       </div>
 
-      <div className="dashboard-title">
-        <h1>📊 Eversun AIg CRM Dashboard</h1>
-        <h3>Welcome, {currentUser}</h3>
-      </div>
-      <div className="dashboard-cards">
+      <div className="user-box">
 
-        {cards.map((card, index) => (
-          <div
-            key={index}
-            className="dashboard-card"
+        <h2>{currentUser}</h2>
+
+        <p>{role}</p>
+
+      </div>
+
+    </div>
+
+    {/* Title */}
+
+    <div className="dashboard-title">
+
+      <h1>📊 Eversun AI CRM Dashboard</h1>
+
+      <h3>Welcome, {currentUser}</h3>
+
+    </div>
+
+    {/* Dashboard Cards */}
+
+    <div className="dashboard-cards">
+
+      {cards.map((card) => (
+
+        <div
+          key={card.title}
+          className="dashboard-card"
+        >
+
+          <h3>{card.title}</h3>
+
+          <h1
+            style={{
+              color: card.color,
+              margin: "15px 0",
+              fontSize: "42px",
+            }}
           >
-            <h3>{card.title}</h3>
+            {card.value}
+          </h1>
 
-            <h1
-              style={{
-                color: card.color,
-                margin: "15px 0",
-                fontSize: "42px",
-              }}
+          <button
+            className="view-btn"
+            onClick={() => setPage(card.page)}
+          >
+            View Details →
+          </button>
+
+        </div>
+
+      ))}
+
+      {/* Revenue Card */}
+
+      <div className="dashboard-card">
+
+        <h3>💵 Revenue</h3>
+
+        <h1
+          style={{
+            color: "#E91E63",
+            margin: "15px 0",
+            fontSize: "36px",
+          }}
+        >
+          ₹{totalRevenue.toLocaleString("en-IN")}
+        </h1>
+
+      </div>
+
+    </div>
+
+    {/* Recent Data */}
+
+    <div className="dashboard-row">
+
+      <div className="dashboard-box">
+
+        <h2>📋 Recent Leads</h2>
+
+        {filteredLeads.length === 0 ? (
+
+          <p>No Leads Available</p>
+
+        ) : (
+
+          filteredLeads.slice(0, 5).map((lead) => (
+
+            <div
+              key={lead.id}
+              className="list-item"
             >
-              {card.value}
-            </h1>
 
-            <button
-  className="view-btn"
-  onClick={() => setPage(card.page)}
->
-  View Details →
-</button>
-          </div>
-        ))}
+              <strong>{lead.name}</strong>
+
+              <br />
+
+              📞 {lead.mobile}
+
+            </div>
+
+          ))
+
+        )}
+
+      </div>
+
+      <div className="dashboard-box">
+
+        <h2>☀️ Recent Projects</h2>
+
+        {filteredProjects.length === 0 ? (
+
+          <p>No Projects Available</p>
+
+        ) : (
+
+          filteredProjects.slice(0, 5).map((project) => (
+
+            <div
+              key={project.id}
+              className="list-item"
+            >
+
+              <strong>{project.customer}</strong>
+
+              <br />
+
+              {project.status}
+
+            </div>
+
+          ))
+
+        )}
 
       </div>
 
-      <div className="dashboard-row">
+    </div>
 
-        <div className="dashboard-box">
+    {/* Quick Actions */}
 
-          <h2>📋 Recent Leads</h2>
+    <div className="dashboard-row">
 
-          {leads.length === 0 ? (
-            <p>No Leads Available</p>
-          ) : (
-            leads.slice(0, 5).map((lead, index) => (
-              <div
-                key={index}
-                className="list-item"
-              >
-                <strong>{lead.name}</strong>
-                <br />
-                📞 {lead.mobile}
-              </div>
-            ))
-          )}
+      <div className="dashboard-box">
 
-        </div>
+        <h2>⚡ Quick Actions</h2>
 
-        <div className="dashboard-box">
+        <div className="quick-actions">
 
-          <h2>☀️ Recent Projects</h2>
+          <button
+            className="action-btn"
+            onClick={() => setPage("leads")}
+          >
+            ➕ Add Lead
+          </button>
 
-          {projects.length === 0 ? (
-            <p>No Projects Available</p>
-          ) : (
-            projects.slice(0, 5).map((project, index) => (
-              <div
-                key={index}
-                className="list-item"
-              >
-                <strong>{project.customer}</strong>
-                <br />
-                {project.system}
-              </div>
-            ))
-          )}
+          <button
+            className="action-btn"
+            onClick={() => setPage("customers")}
+          >
+            👤 Customers
+          </button>
 
-        </div>
+          <button
+            className="action-btn"
+            onClick={() => setPage("quotations")}
+          >
+            📄 Quotations
+          </button>
 
-      </div>
-<div className="dashboard-row">
-
-        <div className="dashboard-box">
-
-          <h2>⚡ Quick Actions</h2>
-
-          <div className="quick-actions">
-
-            <button className="action-btn">
-              ➕ Add Lead
-            </button>
-
-            <button className="action-btn">
-              👤 Add Customer
-            </button>
-
-            <button className="action-btn">
-              📄 Create Quotation
-            </button>
-
-            <button className="action-btn">
-              ☀️ Add Project
-            </button>
-
-          </div>
-
-        </div>
-
-        <div className="dashboard-box">
-
-          <h2>📅 Today's Information</h2>
-
-          <p>
-            <strong>Date :</strong>{" "}
-            {new Date().toLocaleDateString("en-IN")}
-          </p>
-
-          <p>
-            <strong>Time :</strong>{" "}
-            {new Date().toLocaleTimeString("en-IN")}
-          </p>
-
-          <p>
-            <strong>User :</strong> {currentUser}
-          </p>
-
-          <p>
-            <strong>Role :</strong> {role}
-          </p>
+          <button
+            className="action-btn"
+            onClick={() => setPage("projects")}
+          >
+            ☀️ Projects
+          </button>
 
         </div>
 
       </div>
 
-      <div className="dashboard-footer">
+      <div className="dashboard-box">
+
+        <h2>📅 Today's Information</h2>
 
         <p>
-          © 2026 <strong>Eversun Energiaa</strong>. All Rights Reserved.
+          <strong>Date :</strong>{" "}
+          {new Date().toLocaleDateString("en-IN")}
         </p>
 
         <p>
-          Developed by Eversun AI CRM
+          <strong>Time :</strong>{" "}
+          {new Date().toLocaleTimeString("en-IN")}
+        </p>
+
+        <p>
+          <strong>User :</strong> {currentUser}
+        </p>
+
+        <p>
+          <strong>Role :</strong> {role}
         </p>
 
       </div>
 
     </div>
-  );
+    {/* Footer */}
+
+    <div className="dashboard-footer">
+
+      <p>
+        © 2026 <strong>Eversun Energiaa</strong>. All Rights Reserved.
+      </p>
+
+      <p>
+        Developed by Eversun AI CRM
+      </p>
+
+    </div>
+
+  </div>
+);
+
 }
 
 export default Dashboard;

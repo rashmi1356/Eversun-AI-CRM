@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  updateDoc,
+  doc,
+  query,
+  orderBy,
+  serverTimestamp,
+} from "firebase/firestore";
+
 import { db } from "../firebase";
+
 
 function Leads() {
 
@@ -15,12 +27,10 @@ function Leads() {
   const [employees, setEmployees] = useState([]);
 
   // Leads
- const [leads, setLeads] = useState(() => {
-  const saved = localStorage.getItem("leads");
-  return saved ? JSON.parse(saved) : [];
-});
+ const [leads, setLeads] = useState([]);
   // Search
   const [search, setSearch] = useState("");
+  
 
   // Edit Index
   const [editIndex, setEditIndex] = useState(null);
@@ -36,18 +46,34 @@ function Leads() {
     employee: "",
     status: "New",
   });
+  const leadRef = collection(db, "leads");
+  const loadLeads = async () => {
+  try {
+    const q = query(leadRef, orderBy("createdAt", "desc"));
+
+    const snapshot = await getDocs(q);
+
+    const leadList = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setLeads(leadList);
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   // Load Employees
   useEffect(() => {
-    loadEmployees();
-  }, []);
+  loadEmployees();
+  loadLeads();
+}, []);
 
   // Load Leads
   
   // Save Leads
-  useEffect(() => {
-    localStorage.setItem("leads", JSON.stringify(leads));
-  }, [leads]);
+  
 
   const loadEmployees = async () => {
     try {
@@ -94,7 +120,7 @@ function Leads() {
     });
   };
   // Save Lead
-  const saveLead = () => {
+  const saveLead = async () => {
 
     if (!form.name || !form.mobile) {
       alert("Customer Name and Mobile Number are required.");
@@ -125,15 +151,22 @@ function Leads() {
 
     if (editIndex !== null) {
 
-      const updated = [...leads];
-      updated[editIndex] = lead;
-      setLeads(updated);
-      setEditIndex(null);
+  await updateDoc(doc(db, "leads", editIndex), {
+    ...lead,
+  });
 
-    } else {
+  loadLeads();
 
-      setLeads([...leads, lead]);
+  setEditIndex(null);
 
+} else {
+
+      await addDoc(leadRef, {
+  ...lead,
+  createdAt: serverTimestamp(),
+});
+
+loadLeads();
     }
 
     // Clear Form
@@ -152,41 +185,44 @@ function Leads() {
 
   // Edit Lead
   const editLead = (index) => {
+  const lead = filteredLeads[index];
 
-    const lead = filteredLeads[index];
+  setForm({
+    name: lead.name,
+    mobile: lead.mobile,
+    village: lead.village,
+    district: lead.district,
+    system: lead.system,
+    bill: lead.bill,
+    employee: lead.employee,
+    status: lead.status,
+  });
 
-    setForm(lead);
-
-    const originalIndex = leads.findIndex(
-      (l) =>
-        l.mobile === lead.mobile &&
-        l.name === lead.name
-    );
-
-    setEditIndex(originalIndex);
-
-  };
+  setEditIndex(lead.id);
+};
 
   // Delete Lead
-  const deleteLead = (index) => {
+  const deleteLead = async (index) => {
 
-    if (!window.confirm("Delete this lead?")) return;
+  if (!window.confirm("Delete this lead?")) return;
+
+  try {
 
     const lead = filteredLeads[index];
 
-    const originalIndex = leads.findIndex(
-      (l) =>
-        l.mobile === lead.mobile &&
-        l.name === lead.name
-    );
+    await deleteDoc(doc(db, "leads", lead.id));
 
-    const updated = leads.filter(
-      (_, i) => i !== originalIndex
-    );
+    loadLeads();
 
-    setLeads(updated);
+  } catch (error) {
 
-  };
+    console.log(error);
+
+    alert("Unable to delete lead.");
+
+  }
+
+};
   return (
     <div style={{ padding: "20px" }}>
 

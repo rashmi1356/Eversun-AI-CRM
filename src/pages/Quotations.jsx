@@ -1,25 +1,56 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Quotations.css";
 import Header from "../components/Header";
 
-function Quotations({
-  customers,
-  setCustomers,
-  setQuotationData,
-  setPage,
-}) {
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+  serverTimestamp,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
+
+function Quotations({ setQuotationData, setPage }) {
+
+  // Logged In User
+  const currentUser = {
+    id: localStorage.getItem("userId") || "",
+    name: localStorage.getItem("userName") || "",
+    role: localStorage.getItem("role") || "",
+  };
+
+  // Firestore
+  const quotationRef = collection(db, "quotations");
+
+  // Dashboard
+  const [quotations, setQuotations] = useState([]);
+
+  // Search
+  const [search, setSearch] = useState("");
+
+  // Edit
+  const [editId, setEditId] = useState(null);
+
+  // Customer Details
   const [customer, setCustomer] = useState("");
   const [mobile, setMobile] = useState("");
   const [address, setAddress] = useState("");
   const [district, setDistrict] = useState("");
   const [consumerNo, setConsumerNo] = useState("");
 
+  // Solar Details
   const [system, setSystem] = useState("3");
   const [panelBrand, setPanelBrand] = useState("Waaree");
   const [inverterBrand, setInverterBrand] = useState("Luminous");
-
   const [price, setPrice] = useState("");
 
+  // Subsidy
   const subsidy =
     Number(system) >= 3
       ? 138000
@@ -29,16 +60,50 @@ function Quotations({
       ? 55000
       : 0;
 
+  // Customer Payable
   const payable = (Number(price) || 0) - subsidy;
 
+  // Auto Quotation Number
   const quotationNo =
-    "QTN-" +
+    "EVS-" +
     new Date().getFullYear() +
     "-" +
-    Date.now().toString().slice(-4);
+    String(Date.now()).slice(-6);
 
-  const saveQuotation = () => {
-    const newQuotation = {
+  // Load Quotations
+  const loadQuotations = async () => {
+    try {
+      const q = query(
+        quotationRef,
+        orderBy("createdAt", "desc")
+      );
+
+      const snapshot = await getDocs(q);
+
+      const list = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setQuotations(list);
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    loadQuotations();
+  }, []);
+  // Save Quotation
+  const saveQuotation = async () => {
+
+    if (!customer || !mobile || !price) {
+      alert("Please fill all required fields.");
+      return;
+    }
+
+    const quotationData = {
       quotationNo,
       customer,
       mobile,
@@ -48,336 +113,502 @@ function Quotations({
       system,
       panelBrand,
       inverterBrand,
-      price,
+      price: Number(price),
       subsidy,
       payable,
-      date: new Date().toLocaleDateString(),
+      createdBy: currentUser.name,
+      createdByRole: currentUser.role,
+      createdAt: serverTimestamp(),
     };
 
-    const updatedCustomers = [...customers, newQuotation];
+    try {
 
-    setCustomers(updatedCustomers);
+      if (editId) {
 
-    localStorage.setItem(
-      "customers",
-      JSON.stringify(updatedCustomers)
-    );
+        await updateDoc(
+          doc(db, "quotations", editId),
+          quotationData
+        );
 
-    alert("Quotation Saved Successfully!");
+        alert("Quotation Updated Successfully");
+
+        setEditId(null);
+
+      } else {
+
+        await addDoc(
+          quotationRef,
+          quotationData
+        );
+
+        alert("Quotation Saved Successfully");
+
+      }
+
+      // Reload Quotations
+      loadQuotations();
+
+      // Clear Form
+      setCustomer("");
+      setMobile("");
+      setAddress("");
+      setDistrict("");
+      setConsumerNo("");
+      setSystem("3");
+      setPanelBrand("Waaree");
+      setInverterBrand("Luminous");
+      setPrice("");
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert("Something went wrong.");
+
+    }
+
   };
 
- return (
-  <div className="quotation-container">
+  // Edit Quotation
+  const editQuotation = (quotation) => {
 
-    <Header />
-      <div className="quotation-header">
+    setEditId(quotation.id);
 
-        <div className="company-details">
+    setCustomer(quotation.customer);
+    setMobile(quotation.mobile);
+    setAddress(quotation.address);
+    setDistrict(quotation.district);
+    setConsumerNo(quotation.consumerNo);
+    setSystem(quotation.system);
+    setPanelBrand(quotation.panelBrand);
+    setInverterBrand(quotation.inverterBrand);
+    setPrice(quotation.price);
 
-          <h1>EVERSUN ENERGIAA</h1>
+  };
 
-          <p>PM Surya Ghar Empanelled Vendor</p>
+  // Delete Quotation
+  const deleteQuotation = async (id) => {
 
-          <p>Mobile : 7437965253</p>
+    if (!window.confirm("Delete this quotation?"))
+      return;
 
-        </div>
+    try {
 
-        <div className="quotation-info">
+      await deleteDoc(
+        doc(db, "quotations", id)
+      );
 
-          <p>
-            <strong>Quotation No :</strong> {quotationNo}
-          </p>
+      loadQuotations();
 
-          <p>
-            <strong>Date :</strong>{" "}
-            {new Date().toLocaleDateString()}
-          </p>
+      alert("Quotation Deleted");
 
-        </div>
+    } catch (error) {
 
-      </div>
+      console.log(error);
 
-      <hr />
+      alert("Unable to delete quotation.");
 
-      <h2>Customer Information</h2>
+    }
 
-      <div className="form-grid">
+  };
 
-        <input
-          type="text"
-          placeholder="Customer Name"
-          value={customer}
-          onChange={(e) => setCustomer(e.target.value)}
-        />
+  // Search
+  const filteredQuotations =
+    quotations.filter((item) => {
 
-        <input
-          type="text"
-          placeholder="Mobile Number"
-          value={mobile}
-          onChange={(e) => setMobile(e.target.value)}
-        />
+      return (
 
-        <input
-          type="text"
-          placeholder="Address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
+        item.customer
+          ?.toLowerCase()
+          .includes(search.toLowerCase())
 
-        <input
-          type="text"
-          placeholder="District"
-          value={district}
-          onChange={(e) => setDistrict(e.target.value)}
-        />
+        ||
 
-        <input
-          type="text"
-          placeholder="Consumer Number"
-          value={consumerNo}
-          onChange={(e) => setConsumerNo(e.target.value)}
-        />
+        item.mobile
+          ?.includes(search)
 
-        <select
-          value={system}
-          onChange={(e) => setSystem(e.target.value)}
-        >
-          <option value="1">1 kW</option>
-          <option value="2">2 kW</option>
-          <option value="3">3 kW</option>
-          <option value="5">5 kW</option>
-          <option value="10">10 kW</option>
-        </select>
+      );
 
-        <select
-          value={panelBrand}
-          onChange={(e) => setPanelBrand(e.target.value)}
-        >
-          <option>Waaree</option>
-          <option>Adani</option>
-          <option>Premier</option>
-          <option>Loom Solar</option>
-        </select>
+    });
+    return (
+<div className="quotation-container">
 
-        <select
-          value={inverterBrand}
-          onChange={(e) => setInverterBrand(e.target.value)}
-        >
-          <option>Luminous</option>
-          <option>Livguard</option>
-          <option>Growatt</option>
-          <option>Solis</option>
-        </select>
+<Header />
 
-        <input
-          type="number"
-          placeholder="Total Project Cost (₹)"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-        />
-      </div>
-      <hr />
+{/* Dashboard */}
 
-      <h2 style={{ color: "#0B5D3B" }}>
-        Quotation Details
-      </h2>
+<div
+style={{
+display:"flex",
+gap:"20px",
+marginBottom:"20px",
+flexWrap:"wrap",
+}}
+>
 
-      <table className="quotation-table">
-        <thead>
-          <tr>
-            <th>Sl.</th>
-            <th>Particulars</th>
-            <th>Qty</th>
-            <th>Unit</th>
-            <th>Rate (₹)</th>
-            <th>Amount (₹)</th>
-          </tr>
-        </thead>
+<div
+style={{
+background:"#0B5D3B",
+color:"#fff",
+padding:"20px",
+borderRadius:"10px",
+minWidth:"250px",
+textAlign:"center",
+}}
+>
 
-        <tbody>
+<h3>Total Quotations</h3>
 
-          <tr>
-            <td>1</td>
-            <td>
-              {system} kW {panelBrand} Solar PV Modules
-            </td>
-            <td>1</td>
-            <td>Set</td>
-            <td>₹ -</td>
-            <td>₹ -</td>
-          </tr>
+<h1>{quotations.length}</h1>
 
-          <tr>
-            <td>2</td>
-            <td>
-              {system} kW {inverterBrand} On-Grid Inverter
-            </td>
-            <td>1</td>
-            <td>No.</td>
-            <td>₹ -</td>
-            <td>₹ -</td>
-          </tr>
+</div>
 
-          <tr>
-            <td>3</td>
-            <td>
-              BOS Kit (Module Mounting Structure, AC/DC Cable,
-              ACDB, DCDB, Earthing Kit, Lightning Arrester,
-              MC4 Connectors, Conduit Pipe, Cable Ties,
-              Fasteners & Accessories, Installation,
-              Testing & Commissioning)
-            </td>
-            <td>1</td>
-            <td>Set</td>
-            <td>₹ -</td>
-            <td>₹ -</td>
-          </tr>
+</div>
 
-        </tbody>
-      </table>
+{/* Company Header */}
 
-      <div className="summary-box">
+<div className="quotation-header">
 
-        <h2 style={{ color: "#0B5D3B" }}>
-          Quotation Summary
-        </h2>
+<div className="company-details">
 
-        <p>
-          <strong>Total Project Cost :</strong>
-          ₹{Number(price || 0).toLocaleString("en-IN")}
-        </p>
+<h1>EVERSUN ENERGIAA</h1>
 
-        <p>
-          <strong>Government Subsidy :</strong>
-          ₹{subsidy.toLocaleString("en-IN")}
-        </p>
+<p>PM Surya Ghar Empanelled Vendor</p>
 
-        <hr />
+<p>📞 7437965253</p>
 
-        <h2 style={{ color: "#0B5D3B" }}>
-          Customer Payable :
-          ₹{payable.toLocaleString("en-IN")}
-        </h2>
+</div>
 
-      </div>
-      <div className="footer-section">
+<div className="quotation-info">
 
-        <h3 style={{ color: "#0B5D3B" }}>
-          Warranty
-        </h3>
+<p>
 
-        <ul>
-          <li>Solar PV Modules : 25 Years Performance Warranty</li>
-          <li>On-Grid Inverter : As per Manufacturer Warranty</li>
-          <li>BOS Kit : Standard Manufacturer Warranty</li>
-        </ul>
+<strong>Quotation No :</strong>
 
-        <h3 style={{ color: "#0B5D3B", marginTop: "20px" }}>
-          Terms & Conditions
-        </h3>
+{quotationNo}
 
-        <ul>
-          <li>Price includes supply, BOS Kit, installation, testing and commissioning.</li>
-          <li>Government subsidy will be provided as per PM Surya Ghar Yojana guidelines.</li>
-          <li>Net Meter approval is subject to DISCOM rules.</li>
-          <li>This quotation is valid for 15 days from the date of issue.</li>
-        </ul>
+</p>
 
-        <h3 style={{ color: "#0B5D3B", marginTop: "20px" }}>
-          Bank Details
-        </h3>
+<p>
 
-        <p><strong>Account Name :</strong> EVERSUN ENERGIAA</p>
-        <p><strong>Bank Name :</strong> ________</p>
-        <p><strong>Account Number :</strong> ________</p>
-        <p><strong>IFSC Code :</strong> ________</p>
+<strong>Date :</strong>
 
-      </div>
+{new Date().toLocaleDateString()}
+
+</p>
+
+</div>
+
+</div>
+
+<hr />
+
+<h2>Customer Information</h2>
+
+<div className="form-grid">
+
+<input
+type="text"
+placeholder="Customer Name"
+value={customer}
+onChange={(e)=>setCustomer(e.target.value)}
+/>
+
+<input
+type="text"
+placeholder="Mobile Number"
+value={mobile}
+onChange={(e)=>setMobile(e.target.value)}
+/>
+
+<input
+type="text"
+placeholder="Address"
+value={address}
+onChange={(e)=>setAddress(e.target.value)}
+/>
+
+<input
+type="text"
+placeholder="District"
+value={district}
+onChange={(e)=>setDistrict(e.target.value)}
+/>
+
+<input
+type="text"
+placeholder="Consumer Number"
+value={consumerNo}
+onChange={(e)=>setConsumerNo(e.target.value)}
+/>
+
+<select
+value={system}
+onChange={(e)=>setSystem(e.target.value)}
+>
+
+<option value="1">1 KW</option>
+<option value="2">2 KW</option>
+<option value="3">3 KW</option>
+<option value="5">5 KW</option>
+<option value="10">10 KW</option>
+
+</select>
+
+<select
+value={panelBrand}
+onChange={(e)=>setPanelBrand(e.target.value)}
+>
+
+<option>Waaree</option>
+<option>Adani</option>
+<option>Premier</option>
+<option>Loom Solar</option>
+
+</select>
+
+<select
+value={inverterBrand}
+onChange={(e)=>setInverterBrand(e.target.value)}
+>
+
+<option>Luminous</option>
+<option>Growatt</option>
+<option>Livguard</option>
+<option>Solis</option>
+
+</select>
+
+<input
+type="number"
+placeholder="Project Cost (₹)"
+value={price}
+onChange={(e)=>setPrice(e.target.value)}
+/>
+
+</div>
+
+<hr />
+
+<h2 style={{color:"#0B5D3B"}}>
+
+Quotation Summary
+
+</h2>
+
+<p>
+
+<strong>Total Project Cost :</strong>
+
+₹{Number(price||0).toLocaleString("en-IN")}
+
+</p>
+
+<p>
+
+<strong>Government Subsidy :</strong>
+
+₹{subsidy.toLocaleString("en-IN")}
+
+</p>
+
+<hr />
+
+<h2 style={{color:"#0B5D3B"}}>
+
+Customer Payable :
+
+₹{payable.toLocaleString("en-IN")}
+
+</h2>
+
+<div
+style={{
+display:"flex",
+gap:"15px",
+marginTop:"20px",
+flexWrap:"wrap",
+}}
+>
+
+<button onClick={saveQuotation}>
+
+{editId ? "Update Quotation" : "Save Quotation"}
+
+</button>
+
+<button
+onClick={()=>{
+
+setQuotationData({
+
+quotationNo,
+customer,
+mobile,
+address,
+district,
+consumerNo,
+system,
+panelBrand,
+inverterBrand,
+price,
+subsidy,
+payable,
+date:new Date().toLocaleDateString(),
+
+});
+
+setPage("quotationpdf");
+
+}}
+>
+
+🖨️ Print Quotation
+
+</button>
+
+</div>
+
+<hr />
+
+<h2>Saved Quotations</h2>
+
+<input
+type="text"
+placeholder="🔍 Search Customer or Mobile"
+value={search}
+onChange={(e)=>setSearch(e.target.value)}
+style={{
+width:"100%",
+padding:"10px",
+marginBottom:"20px",
+}}
+/>
+{filteredQuotations.length === 0 ? (
+
+  <p>No Quotations Found.</p>
+
+) : (
+
+  filteredQuotations.map((item) => (
+
+    <div
+      key={item.id}
+      style={{
+        border: "1px solid #ddd",
+        borderRadius: "10px",
+        padding: "15px",
+        marginBottom: "15px",
+        background: "#fff",
+      }}
+    >
+
+      <h3>{item.customer}</h3>
+
+      <p>
+        <strong>Quotation No :</strong>
+        {item.quotationNo}
+      </p>
+
+      <p>
+        <strong>Mobile :</strong>
+        {item.mobile}
+      </p>
+
+      <p>
+        <strong>Address :</strong>
+        {item.address}
+      </p>
+
+      <p>
+        <strong>District :</strong>
+        {item.district}
+      </p>
+
+      <p>
+        <strong>Consumer No :</strong>
+        {item.consumerNo}
+      </p>
+
+      <p>
+        <strong>System :</strong>
+        {item.system} KW
+      </p>
+
+      <p>
+        <strong>Panel :</strong>
+        {item.panelBrand}
+      </p>
+
+      <p>
+        <strong>Inverter :</strong>
+        {item.inverterBrand}
+      </p>
+
+      <p>
+        <strong>Total Cost :</strong>
+        ₹{Number(item.price).toLocaleString("en-IN")}
+      </p>
+
+      <p>
+        <strong>Government Subsidy :</strong>
+        ₹{Number(item.subsidy).toLocaleString("en-IN")}
+      </p>
+
+      <h3 style={{ color: "#0B5D3B" }}>
+        Customer Payable :
+        ₹{Number(item.payable).toLocaleString("en-IN")}
+      </h3>
 
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          marginTop: "30px",
-          gap: "15px",
+          gap: "10px",
           flexWrap: "wrap",
+          marginTop: "10px",
         }}
       >
-        <button onClick={saveQuotation}>
-          💾 Save Quotation
+
+        <button
+          onClick={() => editQuotation(item)}
+        >
+          ✏️ Edit
+        </button>
+
+        <button
+          onClick={() => deleteQuotation(item.id)}
+          style={{
+            background: "#d32f2f",
+            color: "#fff",
+          }}
+        >
+          🗑️ Delete
         </button>
 
         <button
           onClick={() => {
-            setQuotationData({
-              quotationNo,
-              customer,
-              mobile,
-              address,
-              district,
-              consumerNo,
-              system,
-              panelBrand,
-              inverterBrand,
-              price,
-              subsidy,
-              payable,
-              date: new Date().toLocaleDateString(),
-            });
+
+            setQuotationData(item);
 
             setPage("quotationpdf");
+
           }}
         >
-          🖨️ Print Quotation
+          🖨️ Print
         </button>
+
       </div>
 
-      <hr />
-
-      <h2>Saved Quotations</h2>
-
-      {customers.length === 0 ? (
-        <p>No quotations available.</p>
-      ) : (
-        customers.map((item, index) => (
-          <div
-            key={index}
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: "10px",
-              padding: "15px",
-              marginBottom: "15px",
-            }}
-          >
-            <h3>{item.customer}</h3>
-
-            <p>
-              <strong>Quotation No:</strong> {item.quotationNo}
-            </p>
-
-            <p>
-              <strong>Mobile:</strong> {item.mobile}
-            </p>
-
-            <p>
-              <strong>System:</strong> {item.system} kW
-            </p>
-
-            <p>
-              <strong>Total Cost:</strong> ₹
-              {Number(item.price).toLocaleString("en-IN")}
-            </p>
-
-            <p>
-              <strong>Payable Amount:</strong> ₹
-              {Number(item.payable).toLocaleString("en-IN")}
-            </p>
-          </div>
-        ))
-      )}
-
     </div>
-  );
+
+  ))
+
+)}
+
+</div>
+
+);
+
 }
 
 export default Quotations;

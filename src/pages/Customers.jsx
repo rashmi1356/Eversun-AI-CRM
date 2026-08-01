@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  updateDoc,
+  doc,
+  query,
+  orderBy,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "../firebase";
 
 function Customer() {
@@ -12,10 +23,7 @@ function Customer() {
   };
 
   // Customers
- const [customers, setCustomers] = useState(() => {
-  const saved = localStorage.getItem("customers");
-  return saved ? JSON.parse(saved) : [];
-});
+ const [customers, setCustomers] = useState([]);
 
   // Employees
   const [employees, setEmployees] = useState([]);
@@ -38,22 +46,35 @@ function Customer() {
     employee: "",
     status: "New",
   });
+  const customerRef = collection(db, "customers");
+  const loadCustomers = async () => {
+  try {
+    const q = query(customerRef, orderBy("createdAt", "desc"));
+
+    const snapshot = await getDocs(q);
+
+    const customerList = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setCustomers(customerList);
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   // Load Customers
   
 
   // Save Customers
-  useEffect(() => {
-    localStorage.setItem(
-      "customers",
-      JSON.stringify(customers)
-    );
-  }, [customers]);
+  
 
   // Load Employees
   useEffect(() => {
-    loadEmployees();
-  }, []);
+  loadEmployees();
+  loadCustomers();
+}, []);
 
   const loadEmployees = async () => {
     try {
@@ -106,7 +127,7 @@ function Customer() {
     });
   };
   // Save Customer
-  const saveCustomer = () => {
+  const saveCustomer = async () => {
 
     if (!form.customerName || !form.mobile) {
       alert("Customer Name and Mobile Number are required.");
@@ -144,22 +165,25 @@ function Customer() {
 
     } else {
 
-      setCustomers([...customers, customerData]);
+      await addDoc(customerRef, {
+  ...customerData,
+  createdAt: serverTimestamp(),
+});
+
+loadCustomers();
 
     }
 
     // Reset Form
     setForm({
-      customerName: "",
-      mobile: "",
-      aadhaar: "",
-      village: "",
-      district: "",
-      system: "",
-      bill: "",
-      employee: "",
-      status: "New",
-    });
+  name: "",
+  mobile: "",
+  village: "",
+  district: "",
+  system: "",
+  employee: "",
+  status: "New",
+});
 
   };
 
