@@ -20,6 +20,7 @@ import ProjectTracker from "./pages/ProjectTracker";
 import Analytics from "./pages/Analytics";
 import CustomerPortal from "./pages/CustomerPortal";
 import EMICalculator from "./pages/EMICalculator";
+import WorkingArea from "./pages/WorkingArea";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -110,7 +111,7 @@ function App() {
         )}
 
         {page === "attendance" && <Attendance />}
-
+      {page === "workingarea" && <WorkingArea />}
         
 
         {page === "projects" && <ProjectTracker />}

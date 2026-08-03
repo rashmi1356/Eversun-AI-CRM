@@ -96,6 +96,12 @@ function Sidebar({ setPage }) {
 <div onClick={() => menuClick("customerportal")}>
     👤 Customer Portal
 </div>
+<div
+  style={{ padding: "10px", cursor: "pointer" }}
+  onClick={() => menuClick("workingarea")}
+>
+  📍 Working Area
+</div>
 
 <div
   onClick={() => {
