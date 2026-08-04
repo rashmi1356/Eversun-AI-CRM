@@ -10,9 +10,10 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
+
 import { db } from "../firebase";
 
-function Leads() {
+function Leads({ setPage }) {
 
   // Logged In User
   const currentUser = {
@@ -21,13 +22,14 @@ function Leads() {
     role: localStorage.getItem("role") || "",
   };
 
-  // Admin & Head of Sales
+  // Permission
   const canViewAll =
     currentUser.role === "Admin" ||
     currentUser.role === "Head of Sales & Marketing";
 
   // Firebase
   const leadRef = collection(db, "leads");
+  const userRef = collection(db, "users");
 
   // States
   const [employees, setEmployees] = useState([]);
@@ -43,16 +45,26 @@ function Leads() {
     system: "",
     bill: "",
     employee: "",
+    status: "New Lead",
   });
+
+  // Form Change
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   // Load Employees
   const loadEmployees = async () => {
     try {
 
-      const snapshot = await getDocs(collection(db, "users"));
+      const snapshot = await getDocs(userRef);
 
-      const list = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const list = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
       }));
 
       setEmployees(list);
@@ -73,19 +85,25 @@ function Leads() {
 
       const snapshot = await getDocs(q);
 
-      const leadList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      const list = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
       }));
 
       if (canViewAll) {
-        setLeads(leadList);
+
+        setLeads(list);
+
       } else {
+
         setLeads(
-          leadList.filter(
-            (item) => item.createdBy === currentUser.name
+          list.filter(
+            (item) =>
+              item.employee === currentUser.name ||
+              item.createdBy === currentUser.name
           )
         );
+
       }
 
     } catch (error) {
@@ -97,14 +115,20 @@ function Leads() {
     loadEmployees();
     loadLeads();
   }, []);
+  // Search
+  const filteredLeads = leads.filter((lead) => {
 
-  // Handle Form Change
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+    const keyword = search.toLowerCase();
+
+    return (
+      lead.name?.toLowerCase().includes(keyword) ||
+      lead.mobile?.includes(search) ||
+      lead.village?.toLowerCase().includes(keyword) ||
+      lead.district?.toLowerCase().includes(keyword)
+    );
+
+  });
+
   // Save Lead
   const saveLead = async () => {
 
@@ -113,31 +137,15 @@ function Leads() {
       return;
     }
 
-    let lead = {};
-
-    // Admin & Head of Sales
-    if (canViewAll) {
-
-      lead = {
-        ...form,
-        employee: form.employee,
-        createdBy: currentUser.name,
-        createdByRole: currentUser.role,
-        createdAt: serverTimestamp(),
-      };
-
-    } else {
-
-      // Sales Executive
-      lead = {
-        ...form,
-        employee: currentUser.name,
-        createdBy: currentUser.name,
-        createdByRole: currentUser.role,
-        createdAt: serverTimestamp(),
-      };
-
-    }
+    const leadData = {
+      ...form,
+      employee: canViewAll
+        ? form.employee
+        : currentUser.name,
+      createdBy: currentUser.name,
+      createdByRole: currentUser.role,
+      updatedAt: serverTimestamp(),
+    };
 
     try {
 
@@ -145,27 +153,21 @@ function Leads() {
 
         await updateDoc(
           doc(db, "leads", editId),
-          {
-            ...lead,
-          }
+          leadData
         );
 
         alert("Lead Updated Successfully");
 
-        setEditId(null);
-
       } else {
 
-        await addDoc(
-          leadRef,
-          lead
-        );
+        await addDoc(leadRef, {
+          ...leadData,
+          createdAt: serverTimestamp(),
+        });
 
         alert("Lead Saved Successfully");
 
       }
-
-      loadLeads();
 
       setForm({
         name: "",
@@ -175,32 +177,17 @@ function Leads() {
         system: "",
         bill: "",
         employee: "",
+        status: "New Lead",
       });
 
-    } catch (error) {
-
-      console.log(error);
-
-    }
-
-  };
-  // Delete Lead
-  const deleteLead = async (id) => {
-
-    if (!window.confirm("Delete this lead?")) return;
-
-    try {
-
-      await deleteDoc(doc(db, "leads", id));
+      setEditId(null);
 
       loadLeads();
 
     } catch (error) {
-
       console.log(error);
-
+      alert("Error saving lead.");
     }
-
   };
 
   // Edit Lead
@@ -216,82 +203,130 @@ function Leads() {
       system: lead.system || "",
       bill: lead.bill || "",
       employee: lead.employee || "",
+      status: lead.status || "New Lead",
     });
 
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
-  // Search
-  const filteredLeads = leads.filter((item) =>
-    (item.name || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  // Delete Lead
+  const deleteLead = async (id) => {
 
+    if (!window.confirm("Delete this lead?")) return;
+
+    try {
+
+      await deleteDoc(doc(db, "leads", id));
+
+      alert("Lead Deleted Successfully");
+
+      loadLeads();
+
+    } catch (error) {
+      console.log(error);
+      alert("Error deleting lead.");
+    }
+  };
   return (
     <div style={{ padding: "20px" }}>
 
       <h2>👥 Lead Management</h2>
 
-      <input
-        name="name"
-        placeholder="Customer Name"
-        value={form.name}
-        onChange={handleChange}
-      />
+      <div
+        style={{
+          background: "#fff",
+          padding: "20px",
+          borderRadius: "10px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+          marginBottom: "20px",
+        }}
+      >
 
-      <br /><br />
+        <h3>
+          {editId ? "✏️ Update Lead" : "➕ Add New Lead"}
+        </h3>
 
-      <input
-        name="mobile"
-        placeholder="Mobile Number"
-        value={form.mobile}
-        onChange={handleChange}
-      />
+        <input
+          type="text"
+          name="name"
+          placeholder="Customer Name"
+          value={form.name}
+          onChange={handleChange}
+          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+        />
 
-      <br /><br />
+        <input
+          type="text"
+          name="mobile"
+          placeholder="Mobile Number"
+          value={form.mobile}
+          onChange={handleChange}
+          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+        />
 
-      <input
-        name="village"
-        placeholder="Village / City"
-        value={form.village}
-        onChange={handleChange}
-      />
+        <input
+          type="text"
+          name="village"
+          placeholder="Village / City"
+          value={form.village}
+          onChange={handleChange}
+          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+        />
 
-      <br /><br />
+        <input
+          type="text"
+          name="district"
+          placeholder="District"
+          value={form.district}
+          onChange={handleChange}
+          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+        />
 
-      <input
-        name="district"
-        placeholder="District"
-        value={form.district}
-        onChange={handleChange}
-      />
+        <input
+          type="text"
+          name="system"
+          placeholder="System Size (2KW / 3KW / 5KW)"
+          value={form.system}
+          onChange={handleChange}
+          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+        />
 
-      <br /><br />
+        <input
+          type="number"
+          name="bill"
+          placeholder="Monthly Electricity Bill"
+          value={form.bill}
+          onChange={handleChange}
+          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+        />
 
-      <input
-        name="system"
-        placeholder="System Size"
-        value={form.system}
-        onChange={handleChange}
-      />
+        <select
+          name="status"
+          value={form.status}
+          onChange={handleChange}
+          style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+        >
+          <option value="New Lead">New Lead</option>
+          <option value="Contacted">Contacted</option>
+          <option value="Follow-up">Follow-up</option>
+          <option value="Site Visit">Site Visit</option>
+          <option value="Quotation Sent">Quotation Sent</option>
+          <option value="Sale Closed">Sale Closed</option>
+        </select>
 
-      <br /><br />
-
-      <input
-        name="bill"
-        placeholder="Monthly Electricity Bill"
-        value={form.bill}
-        onChange={handleChange}
-      />
-
-      <br /><br />
-
-      {canViewAll && (
-        <>
+        {canViewAll && (
           <select
             name="employee"
             value={form.employee}
             onChange={handleChange}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "10px",
+            }}
           >
             <option value="">Assign Employee</option>
 
@@ -300,36 +335,61 @@ function Leads() {
                 {emp.name}
               </option>
             ))}
-
           </select>
+        )}
 
-          <br /><br />
-        </>
-      )}
+        <button
+          onClick={saveLead}
+          style={{
+            background: "#0B5D3B",
+            color: "#fff",
+            border: "none",
+            padding: "12px 25px",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
+        >
+          {editId ? "Update Lead" : "Save Lead"}
+        </button>
 
-      <button onClick={saveLead}>
-        {editId ? "Update Lead" : "Save Lead"}
-      </button>
-
-      <hr />
+      </div>
 
       <input
-        placeholder="Search Customer"
+        type="text"
+        placeholder="🔍 Search Customer..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "10px",
+          marginBottom: "20px",
+        }}
       />
-
-      <br /><br />
-
-      <table border="1" cellPadding="8" width="100%">
-        <thead>
+      <table
+        border="1"
+        cellPadding="10"
+        width="100%"
+        style={{
+          borderCollapse: "collapse",
+          background: "#fff",
+        }}
+      >
+        <thead
+          style={{
+            background: "#0B5D3B",
+            color: "#fff",
+          }}
+        >
           <tr>
-            <th>Name</th>
+            <th>Sl. No.</th>
+            <th>Date</th>
+            <th>Customer</th>
             <th>Mobile</th>
             <th>Village</th>
             <th>District</th>
             <th>System</th>
-            <th>Bill</th>
+            <th>Status</th>
             <th>Employee</th>
             <th>Action</th>
           </tr>
@@ -337,37 +397,111 @@ function Leads() {
 
         <tbody>
 
-          {filteredLeads.map((lead) => (
+          {filteredLeads.length === 0 ? (
 
-            <tr key={lead.id}>
-
-              <td>{lead.name}</td>
-              <td>{lead.mobile}</td>
-              <td>{lead.village}</td>
-              <td>{lead.district}</td>
-              <td>{lead.system}</td>
-              <td>{lead.bill}</td>
-              <td>{lead.employee}</td>
-
-              <td>
-
-                <button
-                  onClick={() => editLead(lead)}
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() => deleteLead(lead.id)}
-                >
-                  Delete
-                </button>
-
+            <tr>
+              <td colSpan="10" style={{ textAlign: "center" }}>
+                No Leads Found
               </td>
-
             </tr>
 
-          ))}
+          ) : (
+
+            filteredLeads.map((lead, index) => (
+
+              <tr key={lead.id}>
+
+                <td>{index + 1}</td>
+
+                <td>
+                  {lead.createdAt?.toDate
+                    ? lead.createdAt.toDate().toLocaleDateString("en-IN")
+                    : "-"}
+                </td>
+
+                <td>{lead.name}</td>
+                <td>{lead.mobile}</td>
+                <td>{lead.village}</td>
+                <td>{lead.district}</td>
+                <td>{lead.system}</td>
+                <td>{lead.status}</td>
+                <td>{lead.employee}</td>
+
+                <td>
+
+                  <button
+                    onClick={() => editLead(lead)}
+                    style={{
+                      margin: "2px",
+                      background: "#2196F3",
+                      color: "#fff",
+                      border: "none",
+                      padding: "6px 10px",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✏️ Edit
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      localStorage.setItem(
+                        "selectedLead",
+                        JSON.stringify(lead)
+                      );
+                      setPage("followups");
+                    }}
+                    style={{
+                      margin: "2px",
+                      background: "#FF9800",
+                      color: "#fff",
+                      border: "none",
+                      padding: "6px 10px",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    📞 Follow-up
+                  </button>
+
+                  <button
+                    onClick={() => setPage("quotations")}
+                    style={{
+                      margin: "2px",
+                      background: "#4CAF50",
+                      color: "#fff",
+                      border: "none",
+                      padding: "6px 10px",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    📄 Quotation
+                  </button>
+
+                  <button
+                    onClick={() => deleteLead(lead.id)}
+                    style={{
+                      margin: "2px",
+                      background: "#F44336",
+                      color: "#fff",
+                      border: "none",
+                      padding: "6px 10px",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🗑️ Delete
+                  </button>
+
+                </td>
+
+              </tr>
+
+            ))
+
+          )}
 
         </tbody>
 

@@ -12,7 +12,6 @@ import Quotations from "./pages/Quotations";
 import QuotationPDF from "./pages/QuotationPDF";
 import Reports from "./pages/Reports";
 import Login from "./pages/Login";
-import Header from "./components/Header";
 import UserManagement from "./pages/UserManagement";
 import EmployeePerformance from "./pages/EmployeePerformance";
 import Attendance from "./pages/Attendance";
@@ -22,15 +21,21 @@ import CustomerPortal from "./pages/CustomerPortal";
 import EMICalculator from "./pages/EMICalculator";
 import WorkingArea from "./pages/WorkingArea";
 
+import Ambassador from "./pages/Ambassador";
+import AmbassadorCertificate from "./pages/AmbassadorCertificate";
+import AmbassadorList from "./pages/AmbassadorList";
+
 function App() {
+
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("isLoggedIn") === "true"
   );
 
   const [page, setPage] = useState("dashboard");
-  console.log("Current Page:", page);
 
   const [quotationData, setQuotationData] = useState(null);
+
+  const [ambassadorData, setAmbassadorData] = useState(null);
 
   const [customers, setCustomers] = useState(() => {
     const saved = localStorage.getItem("customers");
@@ -41,8 +46,7 @@ function App() {
     const saved = localStorage.getItem("quotations");
     return saved ? JSON.parse(saved) : [];
   });
-
-  // Allow Customer Portal without employee login
+  // Customer Portal without Login
   if (!isLoggedIn && page !== "customerportal") {
     return (
       <Login
@@ -52,40 +56,63 @@ function App() {
     );
   }
 
-  // Customer Portal Only
   if (!isLoggedIn && page === "customerportal") {
-    return <CustomerPortal setPage={setPage} />;
+    return (
+      <CustomerPortal
+        setPage={setPage}
+      />
+    );
   }
 
   return (
     <div style={{ display: "flex" }}>
+
+      {/* Sidebar */}
+
       <div className="no-print">
         <Sidebar setPage={setPage} />
       </div>
 
-      <div style={{ flex: 1, padding: "20px" }}>
-       
+      {/* Main Content */}
+
+      <div
+        style={{
+          flex: 1,
+          padding: "20px",
+        }}
+      >
 
         {page === "dashboard" && (
           <Dashboard
-  customers={customers}
-  quotations={quotations}
-  setPage={setPage}
-/>
+            customers={customers}
+            quotations={quotations}
+            setPage={setPage}
+          />
         )}
 
         {page === "analytics" && <Analytics />}
 
-        {page === "leads" && <Leads />}
+        {page === "leads" && (
+  <Leads setPage={setPage} />
+)}
 
-        {page === "followups" && <FollowUps />}
-
-        {page === "customers" && (
-          <Customers customers={customers} />
+        {page === "followups" && (
+          <FollowUps />
         )}
 
-        {page === "sales" && <Sales />}
-        {page === "emi" && <EMICalculator />}
+        {page === "customers" && (
+          <Customers
+            customers={customers}
+          />
+        )}
+
+        {page === "sales" && (
+          <Sales />
+        )}
+
+        {page === "emi" && (
+          <EMICalculator />
+        )}
 
         {page === "quotations" && (
           <Quotations
@@ -95,31 +122,63 @@ function App() {
             setPage={setPage}
           />
         )}
-
         {page === "quotationpdf" && (
           <QuotationPDF
             quotationData={quotationData}
           />
         )}
 
-        {page === "reports" && <Reports />}
+        {page === "reports" && (
+          <Reports />
+        )}
 
-        {page === "users" && <UserManagement />}
+        {page === "users" && (
+          <UserManagement />
+        )}
 
         {page === "performance" && (
           <EmployeePerformance />
         )}
 
-        {page === "attendance" && <Attendance />}
-      {page === "workingarea" && <WorkingArea />}
-        
+        {page === "attendance" && (
+          <Attendance />
+        )}
 
-        {page === "projects" && <ProjectTracker />}
+        {page === "workingarea" && (
+          <WorkingArea />
+        )}
+
+        {page === "projects" && (
+          <ProjectTracker />
+        )}
 
         {page === "customerportal" && (
-          <CustomerPortal setPage={setPage} />
+          <CustomerPortal
+            setPage={setPage}
+          />
         )}
-      </div>
+
+        {page === "ambassador" && (
+          <Ambassador
+            setPage={setPage}
+            setAmbassadorData={setAmbassadorData}
+          />
+        )}
+
+        {page === "ambassadorlist" && (
+          <AmbassadorList
+            setPage={setPage}
+            setAmbassadorData={setAmbassadorData}
+          />
+        )}
+
+        {page === "ambassadorcertificate" && (
+          <AmbassadorCertificate
+            data={ambassadorData}
+          />
+        )}
+        </div>
+
     </div>
   );
 }

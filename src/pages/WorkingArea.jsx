@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import odishaLocations from "../data/OdishaLocation";
+
 import {
   collection,
   addDoc,
@@ -10,10 +11,11 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
+
 import { db } from "../firebase";
 
 function WorkingArea() {
-  // Logged In User
+  // Current Logged-in User
   const currentUser = {
     name: localStorage.getItem("userName") || "",
     role: localStorage.getItem("role") || "",
@@ -22,13 +24,13 @@ function WorkingArea() {
   // Firebase Collections
   const workingAreaRef = collection(db, "workingAreas");
   const usersRef = collection(db, "users");
- 
+
   // States
   const [assignments, setAssignments] = useState([]);
-  const [allLocations, setAllLocations] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [villages, setVillages] = useState([]);
+
   const [salesManagers, setSalesManagers] = useState([]);
   const [salesExecutives, setSalesExecutives] = useState([]);
 
@@ -42,306 +44,386 @@ function WorkingArea() {
     remarks: "",
   });
 
-  // Handle Input Change
+  // Handle Form Change
   const handleChange = (e) => {
     setForm({
       ...form,
       [e.target.name]: e.target.value,
     });
   };
-  // Load Locations
-const loadLocations = () => {
-  const districtList = Object.keys(odishaLocations).sort();
-  setDistricts(districtList);
-};
 
-// Load Employees
-const loadEmployees = async () => {
-  try {
-    const snapshot = await getDocs(usersRef);
+  // Load Odisha Districts
+  const loadLocations = () => {
+    const districtList = Object.keys(odishaLocations).sort();
+    setDistricts(districtList);
+  };
 
-    const users = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+  // Load Employees
+  const loadEmployees = async () => {
+    try {
+      const snapshot = await getDocs(usersRef);
 
-    setSalesManagers(
-      users.filter((user) => user.role === "Sales Manager")
-    );
+      const users = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-    setSalesExecutives(
-      users.filter((user) => user.role === "Sales Executive")
-    );
+      setSalesManagers(
+        users.filter(
+          (user) => user.role === "Sales Manager"
+        )
+      );
 
-  } catch (error) {
-    console.log(error);
-  }
-};
+      setSalesExecutives(
+        users.filter(
+          (user) => user.role === "Sales Executive"
+        )
+      );
 
-// Load Assigned Working Areas
-const loadAssignments = async () => {
-  try {
-    const q = query(
-      workingAreaRef,
-      orderBy("createdAt", "desc")
-    );
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  // Load Assigned Working Areas
+  const loadAssignments = async () => {
+    try {
+      const q = query(
+        workingAreaRef,
+        orderBy("createdAt", "desc")
+      );
 
-    const snapshot = await getDocs(q);
+      const snapshot = await getDocs(q);
 
-    const list = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+      const list = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-    setAssignments(list);
+      setAssignments(list);
 
-  } catch (error) {
-    console.log(error);
-  }
-};
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-useEffect(() => {
-  loadLocations();
-  loadEmployees();
-  loadAssignments();
-}, []);
-// Save Working Area
-const deleteAssignment = async (id) => {
-  if (!window.confirm("Delete this assigned working area?")) return;
-
-  try {
-    await deleteDoc(doc(db, "workingAreas", id));
-    alert("Working Area Deleted Successfully");
+  // Load Data on Page Load
+  useEffect(() => {
+    loadLocations();
+    loadEmployees();
     loadAssignments();
-  } catch (error) {
-    console.log(error);
-    alert("Error deleting record");
-  }
-};
-const saveAssignment = async () => {
-  if (
-    !form.workingDate ||
-    !form.district ||
-    !form.block ||
-    !form.village ||
-    !form.salesManager ||
-    !form.salesExecutive
-  ) {
-    alert("Please fill all required fields.");
-   
-    return;
-  }
+  }, []);
 
-  try {
-    await addDoc(workingAreaRef, {
-      ...form,
-      status: "Assigned",
-      createdBy: currentUser.name,
-      createdAt: serverTimestamp(),
-    });
+  // Delete Assignment
+  const deleteAssignment = async (id) => {
 
-    alert("Working Area Assigned Successfully!");
+    if (
+      currentUser.role !== "Admin" &&
+      currentUser.role !== "Head of Sales & Marketing"
+    ) {
+      alert("Only Admin and Head of Sales & Marketing can delete assignments.");
+      return;
+    }
 
-    setForm({
-      workingDate: "",
-      district: "",
-      block: "",
-      village: "",
-      salesManager: "",
-      salesExecutive: "",
-      remarks: "",
-    });
+    if (!window.confirm("Delete this working area?")) return;
 
-    setBlocks([]);
-    setVillages([]);
+    try {
+      await deleteDoc(doc(db, "workingAreas", id));
+      alert("Working Area Deleted Successfully");
+      loadAssignments();
+    } catch (error) {
+      console.log(error);
+      alert("Error deleting record");
+    }
+  };
 
-    loadAssignments();
+  // Save Assignment
+  const saveAssignment = async () => {
 
-  } catch (error) {
-    console.log(error);
-    alert("Error saving Working Area");
-  }
-};
+    if (
+      currentUser.role !== "Admin" &&
+      currentUser.role !== "Head of Sales & Marketing"
+    ) {
+      alert("Only Admin and Head of Sales & Marketing can assign working areas.");
+      return;
+    }
 
-return (
-  <div style={{ padding: "20px" }}>
-    <h2>Working Area Management</h2>
+    if (
+      !form.workingDate ||
+      !form.district ||
+      !form.block ||
+      !form.village ||
+      !form.salesManager ||
+      !form.salesExecutive
+    ) {
+      alert("Please fill all required fields.");
+      return;
+    }
 
-    <input
-      type="date"
-      name="workingDate"
-      value={form.workingDate}
-      onChange={handleChange}
-    />
+    try {
 
-    <br /><br />
+      await addDoc(workingAreaRef, {
+        ...form,
+        status: "Assigned",
+        createdBy: currentUser.name,
+        createdAt: serverTimestamp(),
+      });
 
-    <select
-      name="district"
-      value={form.district}
-      onChange={(e) => {
-        const district = e.target.value;
+      alert("Working Area Assigned Successfully!");
 
-        setForm({
-          ...form,
-          district,
-          block: "",
-          village: "",
-        });
+      setForm({
+        workingDate: "",
+        district: "",
+        block: "",
+        village: "",
+        salesManager: "",
+        salesExecutive: "",
+        remarks: "",
+      });
 
-        const blockList = Object.keys(odishaLocations[district] || {});
-setBlocks(blockList);
-        setVillages([]);
-      }}
-    >
-      <option value="">Select District</option>
+      setBlocks([]);
+      setVillages([]);
 
-      {districts.map((item) => (
-        <option key={item} value={item}>
-          {item}
-        </option>
-      ))}
-    </select>
+      loadAssignments();
 
-    <br /><br />
+    } catch (error) {
+      console.log(error);
+      alert("Error saving Working Area");
+    }
+  };
+  return (
+    <div style={{ padding: "20px" }}>
 
-    <select
-      name="block"
-      value={form.block}
-      onChange={(e) => {
-        const block = e.target.value;
+      <h2>📍 Working Area Management</h2>
+      
+      {(currentUser.role === "Admin" ||
+  currentUser.role === "Head of Sales & Marketing") && (
+  <>
 
-        setForm({
-          ...form,
-          block,
-          village: "",
-        });
+      <br />
 
-        const villageList = odishaLocations[form.district]?.[block] || [];
-setVillages(villageList);
+      <input
+        type="date"
+        name="workingDate"
+        value={form.workingDate}
+        onChange={handleChange}
+      />
 
-        setVillages(villageList);
-      }}
-    >
-      <option value="">Select Block</option>
+      <br /><br />
 
-      {blocks.map((item) => (
-        <option key={item} value={item}>
-          {item}
-        </option>
-      ))}
-    </select>
+      <select
+        name="district"
+        value={form.district}
+        onChange={(e) => {
 
-    <br /><br />
+          const district = e.target.value;
 
-    <select
-      name="village"
-      value={form.village}
-      onChange={handleChange}
-    >
-      <option value="">Select Village</option>
+          setForm({
+            ...form,
+            district,
+            block: "",
+            village: "",
+          });
 
-      {villages.map((item) => (
-        <option key={item} value={item}>
-          {item}
-        </option>
-      ))}
-    </select>
+          const blockList = Object.keys(
+            odishaLocations[district] || {}
+          ).sort();
 
-    <br /><br />
+          setBlocks(blockList);
+          setVillages([]);
 
-    <select
-      name="salesManager"
-      value={form.salesManager}
-      onChange={handleChange}
-    >
-      <option value="">Select Sales Manager</option>
+        }}
+      >
+        <option value="">Select District</option>
 
-      {salesManagers.map((item) => (
-        <option key={item.id} value={item.name}>
-          {item.name}
-        </option>
-      ))}
-    </select>
-
-    <br /><br />
-
-    <select
-      name="salesExecutive"
-      value={form.salesExecutive}
-      onChange={handleChange}
-    >
-      <option value="">Select Sales Executive</option>
-
-      {salesExecutives.map((item) => (
-        <option key={item.id} value={item.name}>
-          {item.name}
-        </option>
-      ))}
-    </select>
-
-    <br /><br />
-
-    <textarea
-      name="remarks"
-      value={form.remarks}
-      onChange={handleChange}
-      placeholder="Remarks"
-    />
-
-    <br /><br />
-
-    <button onClick={saveAssignment}>
-      Assign Working Area
-    </button>
-    
-
-    <hr />
-
-    <table border="1" cellPadding="8" width="100%">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>District</th>
-          <th>Block</th>
-          <th>Village</th>
-          <th>Manager</th>
-          <th>Executive</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        {assignments.map((item) => (
-          <tr key={item.id}>
-            <td>{item.workingDate}</td>
-            <td>{item.district}</td>
-            <td>{item.block}</td>
-            <td>{item.village}</td>
-            <td>{item.salesManager}</td>
-            <td>{item.salesExecutive}</td>
-            <td>{item.status}</td>
-            <td>
-  <button
-    onClick={() => deleteAssignment(item.id)}
-    style={{
-      background: "red",
-      color: "white",
-      border: "none",
-      padding: "5px 10px",
-      cursor: "pointer",
-    }}
-  >
-    Delete
-  </button>
-</td>
-          </tr>
+        {districts.map((item) => (
+          <option key={item} value={item}>
+            {item}
+          </option>
         ))}
-      </tbody>
-    </table>
-  </div>
-);
+
+      </select>
+
+      <br /><br />
+
+      <select
+        name="block"
+        value={form.block}
+        onChange={(e) => {
+
+          const block = e.target.value;
+
+          setForm({
+            ...form,
+            block,
+            village: "",
+          });
+
+          const villageList =
+            odishaLocations[form.district]?.[block] || [];
+
+          setVillages(villageList);
+
+        }}
+      >
+
+        <option value="">Select Block</option>
+
+        {blocks.map((item) => (
+          <option key={item} value={item}>
+            {item}
+          </option>
+        ))}
+
+      </select>
+
+      <br /><br />
+
+      <select
+        name="village"
+        value={form.village}
+        onChange={handleChange}
+      >
+
+        <option value="">Select Village</option>
+
+        {villages.map((item) => (
+          <option key={item} value={item}>
+            {item}
+          </option>
+        ))}
+
+      </select>
+
+      <br /><br />
+
+      <select
+        name="salesManager"
+        value={form.salesManager}
+        onChange={handleChange}
+      >
+
+        <option value="">Select Sales Manager</option>
+
+        {salesManagers.map((item) => (
+          <option key={item.id} value={item.name}>
+            {item.name}
+          </option>
+        ))}
+
+      </select>
+
+      <br /><br />
+
+      <select
+        name="salesExecutive"
+        value={form.salesExecutive}
+        onChange={handleChange}
+      >
+
+        <option value="">Select Sales Executive</option>
+
+        {salesExecutives.map((item) => (
+          <option key={item.id} value={item.name}>
+            {item.name}
+          </option>
+        ))}
+
+      </select>
+
+      <br /><br />
+
+      <textarea
+        name="remarks"
+        rows="3"
+        placeholder="Remarks"
+        value={form.remarks}
+        onChange={handleChange}
+      />
+
+      <br /><br />
+
+      {(currentUser.role === "Admin" ||
+        currentUser.role === "Head of Sales & Marketing") && (
+
+        <button onClick={saveAssignment}>
+          Assign Working Area
+        </button>
+
+      )}
+
+      </>
+)}
+
+<hr />
+
+      <h3>Assigned Working Areas</h3>
+
+      <table
+        border="1"
+        cellPadding="8"
+        width="100%"
+      >
+
+        <thead>
+
+          <tr>
+            <th>Date</th>
+            <th>District</th>
+            <th>Block</th>
+            <th>Village</th>
+            <th>Sales Manager</th>
+            <th>Sales Executive</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+          {assignments.length === 0 ? (
+            <tr>
+              <td colSpan="8" style={{ textAlign: "center" }}>
+                No Working Areas Assigned
+              </td>
+            </tr>
+          ) : (
+            assignments.map((item) => (
+              <tr key={item.id}>
+                <td>{item.workingDate}</td>
+                <td>{item.district}</td>
+                <td>{item.block}</td>
+                <td>{item.village}</td>
+                <td>{item.salesManager}</td>
+                <td>{item.salesExecutive}</td>
+                <td>{item.status}</td>
+
+                <td>
+                  {(currentUser.role === "Admin" ||
+                    currentUser.role === "Head of Sales & Marketing") ? (
+                    <button
+                      onClick={() => deleteAssignment(item.id)}
+                      style={{
+                        background: "red",
+                        color: "white",
+                        border: "none",
+                        padding: "6px 12px",
+                        borderRadius: "5px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Delete
+                    </button>
+                  ) : (
+                    "-"
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export default WorkingArea;
